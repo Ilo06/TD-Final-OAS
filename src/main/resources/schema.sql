@@ -1,3 +1,4 @@
+CREATE TYPE occupation_enum AS ENUM ('JUNIOR', 'SENIOR', 'SECRETARY', 'TREASURER', 'VICE_PRESIDENT', 'PRESIDENT');
 CREATE TABLE IF NOT EXISTS collectivity (
     id                  SERIAL PRIMARY KEY,
     location            VARCHAR(255),
@@ -18,7 +19,7 @@ CREATE TABLE IF NOT EXISTS member (
     profession    VARCHAR(100),
     phone_number  VARCHAR(30),
     email         VARCHAR(150),
-    occupation    VARCHAR(30),
+    occupation    occupation_enum,
     collectivity_id INTEGER,
     registration_fee_paid  BOOLEAN DEFAULT FALSE,
     membership_dues_paid   BOOLEAN DEFAULT FALSE,
