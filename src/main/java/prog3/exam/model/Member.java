@@ -9,14 +9,12 @@ import prog3.exam.model.enums.MemberOccupation;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Member {
-    private UUID id;
+    private int id;
     private String firstName;
     private String lastName;
     private LocalDate birthDate;
