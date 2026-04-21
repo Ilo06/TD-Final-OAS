@@ -33,3 +33,7 @@ build/
 .vscode/
 
 src/main/resources/application.properties
+
+agricultural federation api - v0.0.1.yml
+
+.env
