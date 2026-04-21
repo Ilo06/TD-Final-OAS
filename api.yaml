@@ -4,12 +4,11 @@ info:
   description: |
     Spécification OpenAPI pour la digitalisation des processus administratifs
     de la Fédération de Collectivités Agricoles de Madagascar.
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: Haute École d'Informatique - PROG3
 servers:
-  - url: https://api.federation-agricole.mg/v1
-    description: Serveur de production
+  - url: http://localhost:8080
 
 tags:
   - name: Collectivités
@@ -26,6 +25,8 @@ tags:
     description: "F - Assiduité des membres"
   - name: Statistiques
     description: "G - Statistiques d'une collectivité"
+  - name: StatistiquesFederation
+    description: "H - Statistiques de la fédération"
 
 paths:
 
@@ -72,7 +73,7 @@ paths:
       summary: Demander l'ouverture d'une nouvelle collectivité
       description: |
         Soumet une demande d'ouverture. La fédération vérifie les conditions :
-        - Au moins 10 membres inscrits avec 6 mois d'ancienneté
+        - Au moins 10 membres inscrits dont 5 membres avec 6 mois d'ancienneté
         - Postes spécifiques occupés
         - Ville et spécialité agricole définies
       operationId: creerCollectivite
@@ -174,10 +175,14 @@ paths:
       tags: [Membres]
       summary: Admettre un nouveau membre dans une collectivité
       description: |
-        Conditions requises :
-        - Parrainage par un membre confirmé avec plus de 90 jours d'ancienneté
-        - Informations personnelles complètes
-        - Frais d'adhésion de 50 000 MGA (mobile money ou virement bancaire)
+        Conditions requises (mise à jour B-2) :
+        - Être parrainé par au moins deux membres confirmés de la fédération.
+          Le nombre de parrains issus de la collectivité cible doit être supérieur ou égal
+          au nombre de parrains issus d'autres collectivités.
+        - Fournir ses informations personnelles complètes ainsi que la nature de sa
+          relation avec chaque parrain (famille, amis, collègues, etc.).
+        - Régler les frais d'adhésion de 50 000 MGA (mobile money ou virement bancaire).
+        - Régler l'intégralité des cotisations annuelles obligatoires imposées par la collectivité.
       operationId: admettreMembreCollectivite
       parameters:
         - $ref: "#/components/parameters/collectiviteId"
@@ -847,6 +852,110 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  # ─────────────────────────────────────────────────────────────
+  # H - STATISTIQUES DE LA FÉDÉRATION
+  # ─────────────────────────────────────────────────────────────
+
+  /federation/statistiques/rapport-mensuel:
+    get:
+      tags: [StatistiquesFederation]
+      summary: Obtenir le rapport mensuel global de la fédération
+      description: |
+        Retourne pour chaque collectivité, sur le mois donné :
+        - Le taux d'assiduité global de la collectivité
+        - Le pourcentage de membres à jour dans leurs cotisations
+        - Le nombre de nouveaux adhérents
+      operationId: rapportMensuelFederation
+      parameters:
+        - name: annee
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2026
+        - name: mois
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 4
+      responses:
+        "200":
+          description: Rapport mensuel de la fédération
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RapportMensuelFederation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /federation/statistiques/rapport-annuel:
+    get:
+      tags: [StatistiquesFederation]
+      summary: Obtenir le rapport annuel global de la fédération
+      description: |
+        Retourne pour chaque collectivité, sur l'année donnée :
+        - Le taux d'assiduité global de la collectivité
+        - Le pourcentage de membres à jour dans leurs cotisations
+        - Le nombre de nouveaux adhérents
+        Utilisé lors des assemblées générales annuelles.
+      operationId: rapportAnnuelFederation
+      parameters:
+        - name: annee
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2026
+      responses:
+        "200":
+          description: Rapport annuel de la fédération
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RapportAnnuelFederation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /federation/statistiques/collectivites:
+    get:
+      tags: [StatistiquesFederation]
+      summary: Obtenir les statistiques détaillées par collectivité sur une période donnée
+      description: |
+        Retourne pour chaque collectivité sur une période donnée :
+        - Le taux d'assiduité global
+        - Le pourcentage de membres à jour dans leurs cotisations
+        - Le nombre de nouveaux adhérents
+      operationId: statistiquesCollectivitesFederation
+      parameters:
+        - name: dateDebut
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2026-01-01"
+        - name: dateFin
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2026-04-21"
+      responses:
+        "200":
+          description: Statistiques détaillées par collectivité
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StatistiqueCollectivite"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # COMPONENTS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1109,7 +1218,7 @@ components:
         - metier
         - telephone
         - email
-        - parrainId
+        - parrains
         - modePaiementAdhesion
       properties:
         nom:
@@ -1130,14 +1239,38 @@ components:
         email:
           type: string
           format: email
-        parrainId:
-          type: string
-          format: uuid
-          description: ID d'un membre confirmé avec ancienneté > 90 jours
+        parrains:
+          type: array
+          description: |
+            Liste d'au moins deux parrains, tous membres confirmés de la fédération.
+            Le nombre de parrains issus de la collectivité cible doit être supérieur ou
+            égal au nombre de parrains issus d'autres collectivités.
+          minItems: 2
+          items:
+            $ref: "#/components/schemas/ParrainAdmission"
         modePaiementAdhesion:
           type: string
           enum: [VIREMENT_BANCAIRE, MOBILE_MONEY]
           description: Frais d'adhésion de 50 000 MGA
+        modePaiementCotisationsAnnuelles:
+          type: string
+          enum: [VIREMENT_BANCAIRE, MOBILE_MONEY]
+          description: |
+            Mode de paiement pour les cotisations annuelles obligatoires imposées par
+            la collectivité. Le montant exact est déterminé par la collectivité cible.
+
+    ParrainAdmission:
+      type: object
+      required: [parrainId, relationAvecCandidat]
+      properties:
+        parrainId:
+          type: string
+          format: uuid
+          description: ID d'un membre confirmé de la fédération (ancienneté > 90 jours)
+        relationAvecCandidat:
+          type: string
+          description: Nature de la relation entre le parrain et le candidat (ex. famille, amis, collègues)
+          example: "famille"
 
     MembreModification:
       type: object
@@ -1433,7 +1566,7 @@ components:
         motifAbsence:
           type: string
 
-    # ── Statistiques ──────────────────────────────────────────
+    # ── Statistiques collectivité ─────────────────────────────
 
     RapportMensuel:
       type: object
@@ -1480,6 +1613,59 @@ components:
           type: number
           format: float
           description: Montant potentiellement non payé sur la période (MGA)
+
+    # ── Statistiques fédération ───────────────────────────────
+
+    StatistiqueCollectivite:
+      type: object
+      description: Statistiques clés d'une collectivité sur une période donnée
+      properties:
+        collectiviteId:
+          type: string
+          format: uuid
+          readOnly: true
+        nomCollectivite:
+          type: string
+          readOnly: true
+        tauxAssiduitePourcentage:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Taux d'assiduité global de la collectivité sur la période (%)
+        pourcentageMembresAJourCotisations:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Pourcentage de membres à jour dans leurs cotisations sur la période (%)
+        nombreNouveauxAdherents:
+          type: integer
+          description: Nombre de nouveaux membres ayant adhéré sur la période
+
+    RapportMensuelFederation:
+      type: object
+      description: Rapport mensuel global de la fédération, agrégé par collectivité
+      properties:
+        annee:
+          type: integer
+        mois:
+          type: integer
+        collectivites:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatistiqueCollectivite"
+
+    RapportAnnuelFederation:
+      type: object
+      description: Rapport annuel global de la fédération, agrégé par collectivité
+      properties:
+        annee:
+          type: integer
+        collectivites:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatistiqueCollectivite"
 
     # ── Commun ────────────────────────────────────────────────
 
