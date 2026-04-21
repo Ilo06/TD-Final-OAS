@@ -6,9 +6,11 @@ import java.sql.SQLException;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
+@Configuration
 public class DataSourceConfig {
     private final Dotenv dotenv = Dotenv.load();
 
+    @Bean
     public Connection getConnection() {
         try {
             String url = dotenv.get("JDBC_URL");
