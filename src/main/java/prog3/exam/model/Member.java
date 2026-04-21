@@ -18,7 +18,7 @@ import java.util.UUID;
 public class Member {
     private UUID id;
     private String firstName;
-    private String lastName;git a
+    private String lastName;
     private LocalDate birthDate;
     private Gender gender;
     private String address;
