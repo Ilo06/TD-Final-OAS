@@ -1,15 +1,14 @@
 package prog3.exam.repository;
 
+import org.springframework.stereotype.Repository;
 import prog3.exam.datasource.DataSourceConfig;
 import prog3.exam.model.Collectivity;
-import prog3.exam.model.CollectivityStructure;
-import prog3.exam.model.Member;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class CollectivityRepository {
 
     private final DataSourceConfig dataSourceConfig;
@@ -101,7 +100,6 @@ public class CollectivityRepository {
         }
     }
 
-    /** Returns true if this collectivity already has a number assigned. */
     public boolean hasNumber(int id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(HAS_NUMBER)) {
@@ -114,7 +112,6 @@ public class CollectivityRepository {
         }
     }
 
-    /** Returns true if this collectivity already has a name assigned. */
     public boolean hasName(int id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(HAS_NAME)) {
@@ -155,7 +152,6 @@ public class CollectivityRepository {
         }
     }
 
-    /** Persists number and name for the given collectivity. */
     public void updateIdentity(int id, int number, String name) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(UPDATE_IDENTITY)) {

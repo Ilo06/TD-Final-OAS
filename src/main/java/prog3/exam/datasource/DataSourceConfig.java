@@ -13,7 +13,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class DataSourceConfig {
     private final Dotenv dotenv = Dotenv.load();
 
-//    @Bean
+
     public Connection getConnection() {
         try {
             String url = dotenv.get("JDBC_URL");
@@ -26,7 +26,6 @@ public class DataSourceConfig {
         }
     }
 
-    // REMOVED the @Bean annotation here
     public void closeConnection(Connection connection) {
         if (connection != null) {
             try {

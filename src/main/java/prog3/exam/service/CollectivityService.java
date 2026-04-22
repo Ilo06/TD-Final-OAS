@@ -1,5 +1,6 @@
 package prog3.exam.service;
 
+import org.springframework.stereotype.Service;
 import prog3.exam.exception.BadRequestException;
 import prog3.exam.exception.ConflictException;
 import prog3.exam.exception.NotFoundException;
@@ -15,6 +16,7 @@ import prog3.exam.repository.MemberRepository;
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class CollectivityService {
 
     private final CollectivityRepository collectivityRepository;
