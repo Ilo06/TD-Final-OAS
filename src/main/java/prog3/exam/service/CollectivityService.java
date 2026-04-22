@@ -1,21 +1,20 @@
 package prog3.exam.service;
 
-import org.springframework.stereotype.Service;
 import prog3.exam.exception.BadRequestException;
+import prog3.exam.exception.ConflictException;
 import prog3.exam.exception.NotFoundException;
 import prog3.exam.model.Collectivity;
 import prog3.exam.model.CollectivityStructure;
 import prog3.exam.model.Member;
+import prog3.exam.model.requests.AssignCollectivityIdentityRequest;
 import prog3.exam.model.requests.CreateCollectivityRequest;
 import prog3.exam.model.requests.CreateCollectivityStructureRequest;
+import prog3.exam.repository.CollectivityRepository;
 import prog3.exam.repository.MemberRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import prog3.exam.repository.CollectivityRepository;
-
-@Service
 public class CollectivityService {
 
     private final CollectivityRepository collectivityRepository;
@@ -35,10 +34,10 @@ public class CollectivityService {
 
             CreateCollectivityStructureRequest structureReq = req.getStructure();
 
-            Integer presidentId    = structureReq != null ? structureReq.getPresident()    : null;
+            Integer presidentId     = structureReq != null ? structureReq.getPresident()     : null;
             Integer vicePresidentId = structureReq != null ? structureReq.getVicePresident() : null;
-            Integer treasurerId    = structureReq != null ? structureReq.getTreasurer()    : null;
-            Integer secretaryId    = structureReq != null ? structureReq.getSecretary()    : null;
+            Integer treasurerId     = structureReq != null ? structureReq.getTreasurer()     : null;
+            Integer secretaryId     = structureReq != null ? structureReq.getSecretary()     : null;
 
             validateMemberExists(presidentId,     "President");
             validateMemberExists(vicePresidentId, "Vice-president");
@@ -76,6 +75,40 @@ public class CollectivityService {
         }
 
         return result;
+    }
+
+    public Collectivity assignIdentity(int id, AssignCollectivityIdentityRequest request) {
+        if (request.getNumber() == null || request.getName() == null
+                || request.getName().isBlank()) {
+            throw new BadRequestException("Both number and name are required.");
+        }
+
+        Collectivity collectivity = collectivityRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Collectivity not found: " + id));
+
+        if (collectivityRepository.hasNumber(id)) {
+            throw new ConflictException(
+                    "Collectivity " + id + " already has a number assigned; it cannot be changed.");
+        }
+        if (collectivityRepository.hasName(id)) {
+            throw new ConflictException(
+                    "Collectivity " + id + " already has a name assigned; it cannot be changed.");
+        }
+
+        if (collectivityRepository.numberExistsElsewhere(request.getNumber(), id)) {
+            throw new ConflictException(
+                    "Number " + request.getNumber() + " is already used by another collectivity.");
+        }
+        if (collectivityRepository.nameExistsElsewhere(request.getName(), id)) {
+            throw new ConflictException(
+                    "Name '" + request.getName() + "' is already used by another collectivity.");
+        }
+
+        collectivityRepository.updateIdentity(id, request.getNumber(), request.getName());
+
+        collectivity.setNumber(request.getNumber());
+        collectivity.setName(request.getName());
+        return collectivity;
     }
 
     private void validateCreateCollectivity(CreateCollectivityRequest req) {
