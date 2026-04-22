@@ -13,6 +13,8 @@ import java.util.List;
 @AllArgsConstructor
 public class Collectivity {
     private int id;
+    private Integer number;
+    private String name;
     private String location;
     private CollectivityStructure structure;
     private List<Member> members;
