@@ -1,4 +1,4 @@
-package prog3.exam.service;
+package prog3.exam.repository;
 
 import prog3.exam.datasource.DataSourceConfig;
 
