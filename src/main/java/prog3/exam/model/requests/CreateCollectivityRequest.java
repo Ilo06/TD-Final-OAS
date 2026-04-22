@@ -10,4 +10,12 @@ public class CreateCollectivityRequest {
     private List<Integer> members;
     private Boolean federationApproval;
     private CreateCollectivityStructureRequest structure;
+
+    @Data
+    public static class CreateCollectivityStructureRequest {
+        private int president;
+        private int vicePresident;
+        private int treasurer;
+        private int secretary;
+    }
 }
