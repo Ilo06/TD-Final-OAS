@@ -1,15 +1,14 @@
 package prog3.exam.repository;
 
+import org.springframework.stereotype.Repository;
 import prog3.exam.datasource.DataSourceConfig;
 import prog3.exam.model.Collectivity;
-import prog3.exam.model.CollectivityStructure;
-import prog3.exam.model.Member;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class CollectivityRepository {
 
     private final DataSourceConfig dataSourceConfig;

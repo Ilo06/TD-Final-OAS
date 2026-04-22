@@ -34,4 +34,4 @@ build/
 
 agricultural federation api - v0.0.1.yml
 
-.env.template
+.env
