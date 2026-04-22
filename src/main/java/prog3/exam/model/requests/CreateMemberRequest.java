@@ -19,7 +19,7 @@ public class CreateMemberRequest {
     private String email;
     private MemberOccupation occupation;
 
-    private int collectivityIdentifier;
+    private Integer collectivityIdentifier;
     private List<Integer> referees;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;
