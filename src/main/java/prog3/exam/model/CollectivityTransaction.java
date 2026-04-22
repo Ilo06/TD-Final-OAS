@@ -4,7 +4,10 @@ import lombok.*;
 import prog3.exam.model.enums.PaymentMode;
 import java.time.LocalDate;
 
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CollectivityTransaction {
     private int id;
     private LocalDate creationDate;
