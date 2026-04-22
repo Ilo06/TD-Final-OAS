@@ -4,11 +4,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import io.github.cdimascio.dotenv.Dotenv;
 
+@Configuration
 public class DataSourceConfig {
     private final Dotenv dotenv = Dotenv.load();
 
+    @Bean
     public Connection getConnection() {
         try {
             String url = dotenv.get("JDBC_URL");
@@ -20,6 +25,7 @@ public class DataSourceConfig {
             throw new RuntimeException(e);
         }
     }
+    @Bean
     public void closeConnection(Connection connection) {
         if (connection != null) {
             try {
