@@ -1,9 +1,11 @@
 package prog3.exam.repository;
 
+import org.springframework.stereotype.Repository;
 import prog3.exam.datasource.DataSourceConfig;
 
 import java.sql.*;
 
+@Repository
 public class CollectivityRepository {
 
     private final DataSourceConfig dataSourceConfig;

@@ -3,6 +3,8 @@ package prog3.exam.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Service;
 import prog3.exam.exception.BadRequestException;
 import prog3.exam.exception.NotFoundException;
 import prog3.exam.model.requests.CreateMemberRequest;
@@ -10,6 +12,7 @@ import prog3.exam.repository.CollectivityRepository;
 import prog3.exam.repository.MemberRepository;
 import prog3.exam.model.Member;
 
+@Service
 public class MemberService {
 
     private final MemberRepository memberRepository;
@@ -21,6 +24,7 @@ public class MemberService {
         this.collectivityRepository = collectivityRepository;
     }
 
+    @Bean
     public List<Member> createMembers(List<CreateMemberRequest> requests) {
         List<Member> created = new ArrayList<>();
 
@@ -46,6 +50,7 @@ public class MemberService {
         return created;
     }
 
+    @Bean
     private void validateCreateMember(CreateMemberRequest req) {
         if (!Boolean.TRUE.equals(req.getRegistrationFeePaid())) {
             throw new BadRequestException("Registration fee not paid.");
