@@ -24,7 +24,7 @@ public class MemberService {
         this.collectivityRepository = collectivityRepository;
     }
 
-    @Bean
+//    @Bean
     public List<Member> createMembers(List<CreateMemberRequest> requests) {
         List<Member> created = new ArrayList<>();
 
@@ -50,7 +50,7 @@ public class MemberService {
         return created;
     }
 
-    @Bean
+//    @Bean
     private void validateCreateMember(CreateMemberRequest req) {
         if (!Boolean.TRUE.equals(req.getRegistrationFeePaid())) {
             throw new BadRequestException("Registration fee not paid.");
