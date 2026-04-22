@@ -1,5 +1,6 @@
 package prog3.exam.service;
 
+import org.springframework.stereotype.Service;
 import prog3.exam.exception.BadRequestException;
 import prog3.exam.exception.NotFoundException;
 import prog3.exam.model.Collectivity;
@@ -14,6 +15,7 @@ import java.util.List;
 
 import prog3.exam.repository.CollectivityRepository;
 
+@Service
 public class CollectivityService {
 
     private final CollectivityRepository collectivityRepository;

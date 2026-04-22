@@ -1,5 +1,6 @@
 package prog3.exam.repository;
 
+import org.springframework.stereotype.Repository;
 import prog3.exam.datasource.DataSourceConfig;
 import prog3.exam.model.Member;
 import prog3.exam.model.enums.Gender;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class MemberRepository {
 
     private final DataSourceConfig dataSourceConfig;
