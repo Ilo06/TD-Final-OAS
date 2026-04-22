@@ -1,6 +1,7 @@
 package prog3.exam.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import prog3.exam.model.enums.Gender;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@Builder
 @AllArgsConstructor
 public class Member {
     private int id;
