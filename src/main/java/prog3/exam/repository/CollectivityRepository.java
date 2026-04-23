@@ -3,18 +3,24 @@ package prog3.exam.repository;
 import org.springframework.stereotype.Repository;
 import prog3.exam.datasource.DataSourceConfig;
 import prog3.exam.model.Collectivity;
+import prog3.exam.model.CollectivityStructure;
+import prog3.exam.model.Member;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public class CollectivityRepository {
 
     private final DataSourceConfig dataSourceConfig;
+    private final MemberRepository memberRepository;
 
-    public CollectivityRepository(DataSourceConfig dataSourceConfig) {
+    public CollectivityRepository(DataSourceConfig dataSourceConfig,
+                                   MemberRepository memberRepository) {
         this.dataSourceConfig = dataSourceConfig;
+        this.memberRepository = memberRepository;
     }
 
     private static final String INSERT = """
@@ -30,6 +36,9 @@ public class CollectivityRepository {
             SELECT id, number, name, location, president_id, vice_president_id, treasurer_id, secretary_id
             FROM collectivity WHERE id = ?
             """;
+
+    private static final String FIND_MEMBERS_OF_COLLECTIVITY =
+            "SELECT id FROM member WHERE collectivity_id = ?";
 
     private static final String EXISTS_BY_NUMBER =
             "SELECT COUNT(*) FROM collectivity WHERE number = ? AND id <> ?";
@@ -80,24 +89,65 @@ public class CollectivityRepository {
         }
     }
 
+
     public Optional<Collectivity> findById(int id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
+
+                Integer presidentId     = getNullableInt(rs, "president_id");
+                Integer vicePresidentId = getNullableInt(rs, "vice_president_id");
+                Integer treasurerId     = getNullableInt(rs, "treasurer_id");
+                Integer secretaryId     = getNullableInt(rs, "secretary_id");
+
+                CollectivityStructure structure = CollectivityStructure.builder()
+                        .president(presidentId != null
+                                ? memberRepository.findById(presidentId).orElse(null) : null)
+                        .vicePresident(vicePresidentId != null
+                                ? memberRepository.findById(vicePresidentId).orElse(null) : null)
+                        .treasurer(treasurerId != null
+                                ? memberRepository.findById(treasurerId).orElse(null) : null)
+                        .secretary(secretaryId != null
+                                ? memberRepository.findById(secretaryId).orElse(null) : null)
+                        .build();
+
+                List<Member> members = findMembersOf(id);
+
                 Collectivity c = Collectivity.builder()
                         .id(rs.getInt("id"))
                         .number(rs.getObject("number") != null ? rs.getInt("number") : null)
                         .name(rs.getString("name"))
                         .location(rs.getString("location"))
-                        .members(new ArrayList<>())
+                        .structure(structure)
+                        .members(members)
                         .build();
                 return Optional.of(c);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    
+    private List<Member> findMembersOf(int collectivityId) {
+        List<Member> members = new ArrayList<>();
+        Connection conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(FIND_MEMBERS_OF_COLLECTIVITY)) {
+            ps.setInt(1, collectivityId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int memberId = rs.getInt("id");
+                    memberRepository.findById(memberId).ifPresent(members::add);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
+        }
+        return members;
     }
 
     public boolean hasNumber(int id) {
@@ -124,7 +174,6 @@ public class CollectivityRepository {
         }
     }
 
-    /** Returns true if the given number is already used by another collectivity. */
     public boolean numberExistsElsewhere(int number, int excludeId) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(EXISTS_BY_NUMBER)) {
@@ -138,7 +187,6 @@ public class CollectivityRepository {
         }
     }
 
-    /** Returns true if the given name is already used by another collectivity. */
     public boolean nameExistsElsewhere(String name, int excludeId) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(EXISTS_BY_NAME)) {
@@ -167,5 +215,10 @@ public class CollectivityRepository {
     private void setNullableInt(PreparedStatement ps, int index, Integer value) throws SQLException {
         if (value != null) ps.setInt(index, value);
         else ps.setNull(index, Types.INTEGER);
+    }
+
+    private Integer getNullableInt(ResultSet rs, String column) throws SQLException {
+        int val = rs.getInt(column);
+        return rs.wasNull() ? null : val;
     }
 }

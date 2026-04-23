@@ -4,9 +4,8 @@ import org.springframework.stereotype.Component;
 import prog3.exam.datasource.DataSourceConfig;
 import prog3.exam.model.BankAccount;
 import prog3.exam.model.CashAccount;
-import prog3.exam.model.MobileBankingAccount;
-import prog3.exam.model.enums.Bank;
-import prog3.exam.model.enums.MobileBankingService;
+import prog3.exam.model.*;
+import prog3.exam.model.enums.*;
 
 import java.sql.*;
 import java.util.Optional;
