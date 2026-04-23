@@ -7,7 +7,7 @@ info:
     - v0.0.1 (2026-04-21) : POST /collectivities for collectivities creation and POST /members for members creation.
     - v0.0.2 (2026-04-22) : PUT /collectivities/{id}/informations for collectivity information update.
     - v0.0.3 (2026-04-23) : New features about membership fees, collectivities transactions and its financial accounts, and members payments.
-  version: 0.0.1
+  version: 0.0.3
 servers:
   - url: 'https://localhost:8080'
 paths:
@@ -37,6 +37,29 @@ paths:
           description: Collectivity without federation approval or structure missing.
         404:
           description: Member not found.
+
+  '/collectivities/{id}':
+    get:
+      summary: Get a collectivity by its identifier
+      description: |
+        Returns the collectivity matching the given identifier, including its list of members.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: Unique identifier of the collectivity.
+      responses:
+        200:
+          description: The collectivity matching the given identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        404:
+          description: Collectivity not found.
+
   '/collectivities/{id}/informations':
     put:
       summary: Attribute collectivity informations to specific collectivity
@@ -62,6 +85,7 @@ paths:
           description: Either given number or name is already used by other collectivity.
         404:
           description: Collectivity not found.
+
   '/collectivities/{id}/membershipFees':
     get:
       summary: Retrieve collectivity membership fees
@@ -110,6 +134,7 @@ paths:
           description: Either unrecognized frequency or amount under 0.
         404:
           description: Collectivity not found.
+
   '/collectivities/{id}/transactions':
     get:
       summary: Retrieve specific collectivity transactions for a given period
@@ -146,6 +171,45 @@ paths:
           description: Provided query parameters occur some exceptions.
         404:
           description: Collectivity not found.
+
+  '/collectivities/{id}/financialAccounts':
+    get:
+      summary: Get financial accounts of a collectivity with their balance at a given date
+      description: |
+        Returns the list of financial accounts (cash, mobile money, or bank) belonging to the
+        collectivity identified by `id`. The optional `at` query parameter allows retrieving
+        account balances as they stood on the specified date. If `at` is omitted, current
+        balances are returned.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: Unique identifier of the collectivity.
+        - in: query
+          name: at
+          schema:
+            type: string
+            format: date
+          required: false
+          description: |
+            Date (ISO-8601, e.g. 2025-12-31) at which account balances should be computed.
+            When omitted, current balances are returned.
+      responses:
+        200:
+          description: List of financial accounts with their balance at the requested date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FinancialAccount'
+        400:
+          description: Invalid date format for the `at` parameter.
+        404:
+          description: Collectivity not found.
+
   '/members':
     post:
       summary: Create list of members
@@ -172,6 +236,7 @@ paths:
             - Membership dues not paid or registration fee not paid.
         404:
           description: Either collectivity or member not found.
+
   '/members/{id}/payments':
     post:
       summary: Create some payments for given member
@@ -210,8 +275,7 @@ components:
         members:
           type: array
           items:
-            schema:
-              $ref: '#/components/schemas/MemberIdentifier'
+            $ref: '#/components/schemas/MemberIdentifier'
         federationApproval:
           type: boolean
         structure:
@@ -244,14 +308,14 @@ components:
         name:
           type: string
         number:
-          type: int
+          type: integer
     Collectivity:
       type: object
       allOf:
         - $ref: '#/components/schemas/CollectivityInformation'
       properties:
         id:
-          type: string
+          type: integer
         location:
           type: string
         structure:
@@ -261,14 +325,14 @@ components:
           items:
             $ref: '#/components/schemas/Member'
     MemberIdentifier:
-      type: string
+      type: integer
     CreateMember:
       type: object
       allOf:
         - $ref: '#/components/schemas/MemberInformation'
       properties:
         collectivityIdentifier:
-          type: string
+          type: integer
         referees:
           type: array
           items:
@@ -294,7 +358,7 @@ components:
         profession:
           type: string
         phoneNumber:
-          type: int
+          type: string
         email:
           type: string
         occupation:
@@ -335,7 +399,7 @@ components:
       type: object
       properties:
         amount:
-          type: int
+          type: integer
         membershipFeeIdentifier:
           type: string
         accountCreditedIdentifier:
@@ -347,7 +411,7 @@ components:
         id:
           type: string
         amount:
-          type: int
+          type: integer
         paymentMode:
           $ref: '#/components/schemas/PaymentMode'
         accountCredited:
@@ -365,40 +429,39 @@ components:
       type: object
       properties:
         id:
-          type: string
+          type: integer
         amount:
-          type: int
+          type: number
     MobileBankingAccount:
       type: object
       properties:
         id:
-          type: string
+          type: integer
         holderName:
           type: string
         mobileBankingService:
           $ref: '#/components/schemas/MobileBankingService'
         mobileNumber:
-          type: int
+          type: string
         amount:
           type: number
     BankAccount:
       type: object
       properties:
         id:
-          type: string
+          type: integer
         holderName:
-          type:
-            string
+          type: string
         bankName:
           $ref: '#/components/schemas/Bank'
         bankCode:
-          type: int
+          type: integer
         bankBranchCode:
-          type: int
+          type: integer
         bankAccountNumber:
-          type: int
+          type: integer
         bankAccountKey:
-          type: int
+          type: integer
         amount:
           type: number
     MobileBankingService:
