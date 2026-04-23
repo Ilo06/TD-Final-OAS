@@ -42,7 +42,7 @@ public class MemberRepository {
                    m.profession, m.phone_number, m.email, m.occupation
             FROM member m
             JOIN member_referee mr ON m.id = mr.referee_id
-            WHERE mr.member_id = ?
+                WHERE mr.member_id = ?
             """;
 
     private static final String EXISTS_BY_ID =
@@ -176,4 +176,27 @@ public class MemberRepository {
                 .referees(new ArrayList<>())
                 .build();
     }
+
+    private  String FIND_COLLECTIVITY_ID =
+            "SELECT collectivity_id FROM member WHERE id = ?";
+
+    public Integer findCollectivityId(int memberId) {
+        Connection conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(FIND_COLLECTIVITY_ID)) {
+            ps.setInt(1, memberId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int val = rs.getInt("collectivity_id");
+                    return rs.wasNull() ? null : val;
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
+        }
+    }
+
+
 }

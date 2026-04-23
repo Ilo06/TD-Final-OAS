@@ -5,10 +5,11 @@ import prog3.exam.model.enums.PaymentMode;
 import java.time.LocalDate;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
-public class MemberPayment {
+public class CollectivityTransaction {
     private int id;
-    private int amount;
+    private LocalDate creationDate;
+    private double amount;
     private PaymentMode paymentMode;
     private Object accountCredited;
-    private LocalDate creationDate;
+    private Member memberDebited;
 }
