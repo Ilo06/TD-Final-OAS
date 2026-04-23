@@ -21,8 +21,8 @@ public class MembershipFeeRepository {
     }
 
     private static final String INSERT = """
-            INSERT INTO membership_fee (eligible_from, frequency, amount, label, status, collectivity_id)
-            VALUES (?, ?, ?, ?, 'ACTIVE', ?)
+            INSERT INTO membership_fee (id, eligible_from, frequency, amount, label, status, collectivity_id)
+            VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?)
             """;
 
     private static final String FIND_BY_COLLECTIVITY =
@@ -31,10 +31,10 @@ public class MembershipFeeRepository {
     private static final String COLLECTIVITY_EXISTS =
             "SELECT COUNT(*) FROM collectivity WHERE id = ?";
 
-    public boolean collectivityExists(int id) {
+    public boolean collectivityExists(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(COLLECTIVITY_EXISTS)) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
             }
@@ -45,10 +45,10 @@ public class MembershipFeeRepository {
         }
     }
 
-    public List<MembershipFee> findByCollectivityId(int collectivityId) {
+    public List<MembershipFee> findByCollectivityId(String collectivityId) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_BY_COLLECTIVITY)) {
-            ps.setInt(1, collectivityId);
+            ps.setString(1, collectivityId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<MembershipFee> list = new ArrayList<>();
                 while (rs.next()) list.add(mapRow(rs));
@@ -61,29 +61,28 @@ public class MembershipFeeRepository {
         }
     }
 
-    public List<MembershipFee> saveAll(int collectivityId, List<CreateMembershipFeeRequest> requests) {
+    public List<MembershipFee> saveAll(String collectivityId, List<CreateMembershipFeeRequest> requests) {
         List<MembershipFee> result = new ArrayList<>();
         for (CreateMembershipFeeRequest req : requests) {
             Connection conn = dataSourceConfig.getConnection();
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setDate(1, req.getEligibleFrom() != null ? Date.valueOf(req.getEligibleFrom()) : null);
-                ps.setString(2, req.getFrequency() != null ? req.getFrequency().name() : null);
-                ps.setDouble(3, req.getAmount());
-                ps.setString(4, req.getLabel());
-                ps.setInt(5, collectivityId);
+            try (PreparedStatement ps = conn.prepareStatement(INSERT)) {
+                String feeId = req.getId() != null ? req.getId()
+                        : "fee-" + collectivityId + "-" + System.currentTimeMillis();
+                ps.setString(1, feeId);
+                ps.setDate(2, req.getEligibleFrom() != null ? Date.valueOf(req.getEligibleFrom()) : null);
+                ps.setString(3, req.getFrequency() != null ? req.getFrequency().name() : null);
+                ps.setDouble(4, req.getAmount());
+                ps.setString(5, req.getLabel());
+                ps.setString(6, collectivityId);
                 ps.executeUpdate();
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        result.add(MembershipFee.builder()
-                                .id(keys.getInt(1))
-                                .eligibleFrom(req.getEligibleFrom())
-                                .frequency(req.getFrequency())
-                                .amount(req.getAmount())
-                                .label(req.getLabel())
-                                .status(ActivityStatus.ACTIVE)
-                                .build());
-                    }
-                }
+                result.add(MembershipFee.builder()
+                        .id(feeId)
+                        .eligibleFrom(req.getEligibleFrom())
+                        .frequency(req.getFrequency())
+                        .amount(req.getAmount())
+                        .label(req.getLabel())
+                        .status(ActivityStatus.ACTIVE)
+                        .build());
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             } finally {
@@ -98,7 +97,7 @@ public class MembershipFeeRepository {
         String statusStr = rs.getString("status");
         Date d = rs.getDate("eligible_from");
         return MembershipFee.builder()
-                .id(rs.getInt("id"))
+                .id(rs.getString("id"))
                 .eligibleFrom(d != null ? d.toLocalDate() : null)
                 .frequency(freqStr != null ? Frequency.valueOf(freqStr) : null)
                 .amount(rs.getDouble("amount"))

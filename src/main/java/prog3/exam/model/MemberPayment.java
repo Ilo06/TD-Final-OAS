@@ -6,8 +6,8 @@ import java.time.LocalDate;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class MemberPayment {
-    private int id;
-    private int amount;
+    private String id;
+    private double amount;
     private PaymentMode paymentMode;
     private Object accountCredited;
     private LocalDate creationDate;

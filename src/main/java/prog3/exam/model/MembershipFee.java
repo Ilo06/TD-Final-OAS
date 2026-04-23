@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class MembershipFee {
-    private int id;
+    private String id;
     private LocalDate eligibleFrom;
     private Frequency frequency;
     private double amount;

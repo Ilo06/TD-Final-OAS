@@ -37,10 +37,9 @@ public class CollectivityController {
         return collectivityService.createCollectivities(requests);
     }
 
-
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Collectivity getCollectivity(@PathVariable int id) {
+    public Collectivity getCollectivity(@PathVariable String id) {
         return collectivityRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + id));
     }
@@ -48,16 +47,15 @@ public class CollectivityController {
     @PutMapping("/{id}/identity")
     @ResponseStatus(HttpStatus.OK)
     public Collectivity assignIdentity(
-            @PathVariable int id,
+            @PathVariable String id,
             @RequestBody AssignCollectivityIdentityRequest request) {
         return collectivityService.assignIdentity(id, request);
     }
 
-
     @GetMapping("/{id}/financialAccounts")
     @ResponseStatus(HttpStatus.OK)
     public List<Object> getFinancialAccounts(
-            @PathVariable int id,
+            @PathVariable String id,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate at) {
 

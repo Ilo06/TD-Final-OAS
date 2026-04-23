@@ -4,6 +4,6 @@ import lombok.*;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class CashAccount {
-    private int id;
-    private int amount;
+    private String id;
+    private double amount;
 }

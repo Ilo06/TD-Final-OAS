@@ -13,7 +13,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Repository
 public class FinancialAccountRepository {
 
@@ -23,12 +22,10 @@ public class FinancialAccountRepository {
         this.dataSourceConfig = dataSourceConfig;
     }
 
-
     private static final String FIND_CASH_BY_COLLECTIVITY =
             "SELECT id, amount FROM cash_account WHERE collectivity_id = ?";
 
-    private static final String CASH_PAYMENTS_AFTER =
-            """
+    private static final String CASH_PAYMENTS_AFTER = """
             SELECT COALESCE(SUM(mp.amount), 0)
             FROM member_payment mp
             WHERE mp.account_credited_type = 'CASH'
@@ -36,13 +33,11 @@ public class FinancialAccountRepository {
               AND mp.creation_date         > ?
             """;
 
-
     private static final String FIND_MOBILE_BY_COLLECTIVITY =
             "SELECT id, holder_name, mobile_banking_service, mobile_number, amount " +
             "FROM mobile_banking_account WHERE collectivity_id = ?";
 
-    private static final String MOBILE_PAYMENTS_AFTER =
-            """
+    private static final String MOBILE_PAYMENTS_AFTER = """
             SELECT COALESCE(SUM(mp.amount), 0)
             FROM member_payment mp
             WHERE mp.account_credited_type = 'MOBILE_BANKING'
@@ -50,14 +45,12 @@ public class FinancialAccountRepository {
               AND mp.creation_date         > ?
             """;
 
-
     private static final String FIND_BANK_BY_COLLECTIVITY =
             "SELECT id, holder_name, bank_name, bank_code, bank_branch_code, " +
             "bank_account_number, bank_account_key, amount " +
             "FROM bank_account WHERE collectivity_id = ?";
 
-    private static final String BANK_PAYMENTS_AFTER =
-            """
+    private static final String BANK_PAYMENTS_AFTER = """
             SELECT COALESCE(SUM(mp.amount), 0)
             FROM member_payment mp
             WHERE mp.account_credited_type = 'BANK'
@@ -65,8 +58,7 @@ public class FinancialAccountRepository {
               AND mp.creation_date         > ?
             """;
 
-
-    public List<Object> findByCollectivityId(int collectivityId, LocalDate at) {
+    public List<Object> findByCollectivityId(String collectivityId, LocalDate at) {
         List<Object> accounts = new ArrayList<>();
         accounts.addAll(findCashAccounts(collectivityId, at));
         accounts.addAll(findMobileAccounts(collectivityId, at));
@@ -74,22 +66,21 @@ public class FinancialAccountRepository {
         return accounts;
     }
 
-
-    private List<CashAccount> findCashAccounts(int collectivityId, LocalDate at) {
+    private List<CashAccount> findCashAccounts(String collectivityId, LocalDate at) {
         List<CashAccount> list = new ArrayList<>();
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_CASH_BY_COLLECTIVITY)) {
-            ps.setInt(1, collectivityId);
+            ps.setString(1, collectivityId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("id");
+                    String id = rs.getString("id");
                     double currentAmount = rs.getDouble("amount");
                     double balance = at != null
                             ? currentAmount - paymentsAfter(conn, CASH_PAYMENTS_AFTER, id, at)
                             : currentAmount;
                     list.add(CashAccount.builder()
                             .id(id)
-                            .amount((int) balance)
+                            .amount(balance)
                             .build());
                 }
             }
@@ -101,14 +92,14 @@ public class FinancialAccountRepository {
         return list;
     }
 
-    private List<MobileBankingAccount> findMobileAccounts(int collectivityId, LocalDate at) {
+    private List<MobileBankingAccount> findMobileAccounts(String collectivityId, LocalDate at) {
         List<MobileBankingAccount> list = new ArrayList<>();
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_MOBILE_BY_COLLECTIVITY)) {
-            ps.setInt(1, collectivityId);
+            ps.setString(1, collectivityId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("id");
+                    String id = rs.getString("id");
                     double currentAmount = rs.getDouble("amount");
                     double balance = at != null
                             ? currentAmount - paymentsAfter(conn, MOBILE_PAYMENTS_AFTER, id, at)
@@ -131,14 +122,14 @@ public class FinancialAccountRepository {
         return list;
     }
 
-    private List<BankAccount> findBankAccounts(int collectivityId, LocalDate at) {
+    private List<BankAccount> findBankAccounts(String collectivityId, LocalDate at) {
         List<BankAccount> list = new ArrayList<>();
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_BANK_BY_COLLECTIVITY)) {
-            ps.setInt(1, collectivityId);
+            ps.setString(1, collectivityId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("id");
+                    String id = rs.getString("id");
                     double currentAmount = rs.getDouble("amount");
                     double balance = at != null
                             ? currentAmount - paymentsAfter(conn, BANK_PAYMENTS_AFTER, id, at)
@@ -164,14 +155,9 @@ public class FinancialAccountRepository {
         return list;
     }
 
-    /**
-     * Returns the total amount of payments credited to account {@code accountId}
-     * (of the type encoded in {@code sql}) strictly after {@code at}.
-     * Uses the provided open connection — does NOT close it.
-     */
-    private double paymentsAfter(Connection conn, String sql, int accountId, LocalDate at) {
+    private double paymentsAfter(Connection conn, String sql, String accountId, LocalDate at) {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, accountId);
+            ps.setString(1, accountId);
             ps.setDate(2, Date.valueOf(at));
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getDouble(1) : 0.0;

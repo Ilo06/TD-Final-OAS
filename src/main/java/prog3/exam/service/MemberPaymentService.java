@@ -26,7 +26,7 @@ public class MemberPaymentService {
         this.transactionRepository = transactionRepository;
     }
 
-    public List<MemberPayment> createPayments(int memberId, List<CreateMemberPaymentRequest> requests) {
+    public List<MemberPayment> createPayments(String memberId, List<CreateMemberPaymentRequest> requests) {
         if (!memberRepository.existsById(memberId)) {
             throw new NotFoundException("Member not found: " + memberId);
         }
@@ -37,7 +37,7 @@ public class MemberPaymentService {
             MemberPayment payment = memberPaymentRepository.save(memberId, req);
             result.add(payment);
 
-            Integer collectivityId = memberRepository.findCollectivityId(memberId);
+            String collectivityId = memberRepository.findCollectivityId(memberId);
             if (collectivityId != null) {
                 transactionRepository.save(collectivityId, memberId, payment);
             }

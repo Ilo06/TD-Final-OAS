@@ -24,9 +24,9 @@ public class CollectivityRepository {
     }
 
     private static final String INSERT = """
-            INSERT INTO collectivity (location, federation_approval,
+            INSERT INTO collectivity (id, location, federation_approval,
                                       president_id, vice_president_id, treasurer_id, secretary_id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String EXISTS_BY_ID =
@@ -55,52 +55,51 @@ public class CollectivityRepository {
     private static final String UPDATE_IDENTITY =
             "UPDATE collectivity SET number = ?, name = ? WHERE id = ?";
 
-    public int save(String location, boolean federationApproval,
-                    Integer presidentId, Integer vicePresidentId,
-                    Integer treasurerId, Integer secretaryId) {
+    public void save(String id, String location, boolean federationApproval,
+                    String presidentId, String vicePresidentId,
+                    String treasurerId, String secretaryId) {
         Connection conn = dataSourceConfig.getConnection();
-        try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, location);
-            ps.setBoolean(2, federationApproval);
-            setNullableInt(ps, 3, presidentId);
-            setNullableInt(ps, 4, vicePresidentId);
-            setNullableInt(ps, 5, treasurerId);
-            setNullableInt(ps, 6, secretaryId);
+        try (PreparedStatement ps = conn.prepareStatement(INSERT)) {
+            ps.setString(1, id);
+            ps.setString(2, location);
+            ps.setBoolean(3, federationApproval);
+            setNullableString(ps, 4, presidentId);
+            setNullableString(ps, 5, vicePresidentId);
+            setNullableString(ps, 6, treasurerId);
+            setNullableString(ps, 7, secretaryId);
             ps.executeUpdate();
-
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) return keys.getInt(1);
-                throw new IllegalStateException("No generated key returned for collectivity insert");
-            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-    public boolean existsById(int id) {
+    public boolean existsById(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(EXISTS_BY_ID)) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-
-    public Optional<Collectivity> findById(int id) {
+    public Optional<Collectivity> findById(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
 
-                Integer presidentId     = getNullableInt(rs, "president_id");
-                Integer vicePresidentId = getNullableInt(rs, "vice_president_id");
-                Integer treasurerId     = getNullableInt(rs, "treasurer_id");
-                Integer secretaryId     = getNullableInt(rs, "secretary_id");
+                String presidentId     = rs.getString("president_id");
+                String vicePresidentId = rs.getString("vice_president_id");
+                String treasurerId     = rs.getString("treasurer_id");
+                String secretaryId     = rs.getString("secretary_id");
 
                 CollectivityStructure structure = CollectivityStructure.builder()
                         .president(presidentId != null
@@ -116,7 +115,7 @@ public class CollectivityRepository {
                 List<Member> members = findMembersOf(id);
 
                 Collectivity c = Collectivity.builder()
-                        .id(rs.getInt("id"))
+                        .id(rs.getString("id"))
                         .number(rs.getObject("number") != null ? rs.getInt("number") : null)
                         .name(rs.getString("name"))
                         .location(rs.getString("location"))
@@ -127,18 +126,19 @@ public class CollectivityRepository {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-    
-    private List<Member> findMembersOf(int collectivityId) {
+    private List<Member> findMembersOf(String collectivityId) {
         List<Member> members = new ArrayList<>();
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_MEMBERS_OF_COLLECTIVITY)) {
-            ps.setInt(1, collectivityId);
+            ps.setString(1, collectivityId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    int memberId = rs.getInt("id");
+                    String memberId = rs.getString("id");
                     memberRepository.findById(memberId).ifPresent(members::add);
                 }
             }
@@ -150,75 +150,80 @@ public class CollectivityRepository {
         return members;
     }
 
-    public boolean hasNumber(int id) {
+    public boolean hasNumber(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(HAS_NUMBER)) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() && rs.getBoolean(1);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-    public boolean hasName(int id) {
+    public boolean hasName(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(HAS_NAME)) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() && rs.getBoolean(1);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-    public boolean numberExistsElsewhere(int number, int excludeId) {
+    public boolean numberExistsElsewhere(int number, String excludeId) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(EXISTS_BY_NUMBER)) {
             ps.setInt(1, number);
-            ps.setInt(2, excludeId);
+            ps.setString(2, excludeId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-    public boolean nameExistsElsewhere(String name, int excludeId) {
+    public boolean nameExistsElsewhere(String name, String excludeId) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(EXISTS_BY_NAME)) {
             ps.setString(1, name);
-            ps.setInt(2, excludeId);
+            ps.setString(2, excludeId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-    public void updateIdentity(int id, int number, String name) {
+    public void updateIdentity(String id, int number, String name) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(UPDATE_IDENTITY)) {
             ps.setInt(1, number);
             ps.setString(2, name);
-            ps.setInt(3, id);
+            ps.setString(3, id);
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
     }
 
-    private void setNullableInt(PreparedStatement ps, int index, Integer value) throws SQLException {
-        if (value != null) ps.setInt(index, value);
-        else ps.setNull(index, Types.INTEGER);
-    }
-
-    private Integer getNullableInt(ResultSet rs, String column) throws SQLException {
-        int val = rs.getInt(column);
-        return rs.wasNull() ? null : val;
+    private void setNullableString(PreparedStatement ps, int index, String value) throws SQLException {
+        if (value != null) ps.setString(index, value);
+        else ps.setNull(index, Types.VARCHAR);
     }
 }

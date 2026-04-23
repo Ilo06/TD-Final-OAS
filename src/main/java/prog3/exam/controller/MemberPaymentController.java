@@ -20,7 +20,7 @@ public class MemberPaymentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public List<MemberPayment> createPayments(@PathVariable int id,
+    public List<MemberPayment> createPayments(@PathVariable String id,
                                                @RequestBody List<CreateMemberPaymentRequest> requests) {
         return memberPaymentService.createPayments(id, requests);
     }

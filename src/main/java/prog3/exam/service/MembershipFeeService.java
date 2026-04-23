@@ -18,14 +18,14 @@ public class MembershipFeeService {
         this.membershipFeeRepository = membershipFeeRepository;
     }
 
-    public List<MembershipFee> getByCollectivity(int collectivityId) {
+    public List<MembershipFee> getByCollectivity(String collectivityId) {
         if (!membershipFeeRepository.collectivityExists(collectivityId)) {
             throw new NotFoundException("Collectivity not found: " + collectivityId);
         }
         return membershipFeeRepository.findByCollectivityId(collectivityId);
     }
 
-    public List<MembershipFee> create(int collectivityId, List<CreateMembershipFeeRequest> requests) {
+    public List<MembershipFee> create(String collectivityId, List<CreateMembershipFeeRequest> requests) {
         if (!membershipFeeRepository.collectivityExists(collectivityId)) {
             throw new NotFoundException("Collectivity not found: " + collectivityId);
         }

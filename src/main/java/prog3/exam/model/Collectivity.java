@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Collectivity {
-    private int id;
+    private String id;
     private Integer number;
     private String name;
     private String location;

@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import prog3.exam.datasource.DataSourceConfig;
 import prog3.exam.model.BankAccount;
 import prog3.exam.model.CashAccount;
-import prog3.exam.model.*;
+import prog3.exam.model.MobileBankingAccount;
 import prog3.exam.model.enums.*;
 
 import java.sql.*;
@@ -21,35 +21,29 @@ public class FinancialAccountResolver {
 
     public ResolvedAccount resolve(String accountId) {
         if (accountId == null) return null;
-        int id;
-        try {
-            id = Integer.parseInt(accountId);
-        } catch (NumberFormatException e) {
-            return null;
-        }
 
-        Optional<CashAccount> cash = findCash(id);
-        if (cash.isPresent()) return new ResolvedAccount("CASH", id, cash.get());
+        Optional<CashAccount> cash = findCash(accountId);
+        if (cash.isPresent()) return new ResolvedAccount("CASH", accountId, cash.get());
 
-        Optional<MobileBankingAccount> mobile = findMobile(id);
-        if (mobile.isPresent()) return new ResolvedAccount("MOBILE_BANKING", id, mobile.get());
+        Optional<MobileBankingAccount> mobile = findMobile(accountId);
+        if (mobile.isPresent()) return new ResolvedAccount("MOBILE_BANKING", accountId, mobile.get());
 
-        Optional<BankAccount> bank = findBank(id);
-        if (bank.isPresent()) return new ResolvedAccount("BANK", id, bank.get());
+        Optional<BankAccount> bank = findBank(accountId);
+        if (bank.isPresent()) return new ResolvedAccount("BANK", accountId, bank.get());
 
         return null;
     }
 
-    private Optional<CashAccount> findCash(int id) {
+    private Optional<CashAccount> findCash(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT id, amount FROM cash_account WHERE id = ?")) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
                 return Optional.of(CashAccount.builder()
-                        .id(rs.getInt("id"))
-                        .amount(rs.getInt("amount"))
+                        .id(rs.getString("id"))
+                        .amount(rs.getDouble("amount"))
                         .build());
             }
         } catch (SQLException e) {
@@ -59,17 +53,17 @@ public class FinancialAccountResolver {
         }
     }
 
-    private Optional<MobileBankingAccount> findMobile(int id) {
+    private Optional<MobileBankingAccount> findMobile(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT id, holder_name, mobile_banking_service, mobile_number, amount " +
                 "FROM mobile_banking_account WHERE id = ?")) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
                 String svc = rs.getString("mobile_banking_service");
                 return Optional.of(MobileBankingAccount.builder()
-                        .id(rs.getInt("id"))
+                        .id(rs.getString("id"))
                         .holderName(rs.getString("holder_name"))
                         .mobileBankingService(svc != null ? MobileBankingService.valueOf(svc) : null)
                         .mobileNumber(rs.getString("mobile_number"))
@@ -83,17 +77,17 @@ public class FinancialAccountResolver {
         }
     }
 
-    private Optional<BankAccount> findBank(int id) {
+    private Optional<BankAccount> findBank(String id) {
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT id, holder_name, bank_name, bank_code, bank_branch_code, " +
                 "bank_account_number, bank_account_key, amount FROM bank_account WHERE id = ?")) {
-            ps.setInt(1, id);
+            ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
                 String bank = rs.getString("bank_name");
                 return Optional.of(BankAccount.builder()
-                        .id(rs.getInt("id"))
+                        .id(rs.getString("id"))
                         .holderName(rs.getString("holder_name"))
                         .bankName(bank != null ? Bank.valueOf(bank) : null)
                         .bankCode(rs.getInt("bank_code"))
@@ -112,10 +106,10 @@ public class FinancialAccountResolver {
 
     public static class ResolvedAccount {
         public final String type;
-        public final int id;
+        public final String id;
         public final Object account;
 
-        public ResolvedAccount(String type, int id, Object account) {
+        public ResolvedAccount(String type, String id, Object account) {
             this.type = type;
             this.id = id;
             this.account = account;
