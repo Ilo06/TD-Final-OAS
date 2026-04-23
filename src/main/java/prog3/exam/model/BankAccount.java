@@ -1,7 +1,7 @@
 package prog3.exam.model;
 
 import lombok.*;
-import prog3.exam.model.enums.Bank;
+import prog3.exam.model.enums.*;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class BankAccount {

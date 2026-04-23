@@ -41,3 +41,7 @@ CREATE TABLE IF NOT EXISTS member_referee (
     FOREIGN KEY (member_id) REFERENCES member(id),
     FOREIGN KEY (referee_id) REFERENCES member(id)
 );
+
+ALTER TABLE collectivity
+    ADD COLUMN IF NOT EXISTS number INTEGER UNIQUE,
+    ADD COLUMN IF NOT EXISTS name   VARCHAR(255) UNIQUE;
