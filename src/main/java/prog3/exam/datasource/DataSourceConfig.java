@@ -1,27 +1,32 @@
 package prog3.exam.datasource;
 
+import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-import org.springframework.context.annotation.Configuration;
-
-import io.github.cdimascio.dotenv.Dotenv;
-
 @Configuration
 public class DataSourceConfig {
-    private final Dotenv dotenv = Dotenv.load();
 
+    private final String url;
+    private final String user;
+    private final String password;
+
+    public DataSourceConfig() {
+        Dotenv dotenv = Dotenv.load();
+        this.url = dotenv.get("JDBC_URL");
+        this.user = dotenv.get("JDBC_USER");
+        this.password = dotenv.get("JDBC_PASSWORD");
+    }
 
     public Connection getConnection() {
         try {
-            String url = dotenv.get("JDBC_URL");
-            String user = dotenv.get("JDBC_USER");
-            String password = dotenv.get("JDBC_PASSWORD");
-
             return DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to open DB connection: " + e.getMessage(), e);
         }
     }
 
@@ -30,7 +35,7 @@ public class DataSourceConfig {
             try {
                 connection.close();
             } catch (SQLException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Failed to close DB connection: " + e.getMessage(), e);
             }
         }
     }

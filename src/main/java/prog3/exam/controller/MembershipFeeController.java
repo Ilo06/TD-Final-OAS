@@ -19,13 +19,13 @@ public class MembershipFeeController {
     }
 
     @GetMapping
-    public List<MembershipFee> getByCollectivity(@PathVariable int id) {
+    public List<MembershipFee> getByCollectivity(@PathVariable String id) {
         return membershipFeeService.getByCollectivity(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<MembershipFee> create(@PathVariable int id,
+    public List<MembershipFee> create(@PathVariable String id,
                                        @RequestBody List<CreateMembershipFeeRequest> requests) {
         return membershipFeeService.create(id, requests);
     }

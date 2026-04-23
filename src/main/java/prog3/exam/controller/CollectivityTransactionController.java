@@ -4,7 +4,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import prog3.exam.exception.BadRequestException;
 import prog3.exam.exception.NotFoundException;
-
 import prog3.exam.model.CollectivityTransaction;
 import prog3.exam.repository.CollectivityRepository;
 import prog3.exam.repository.CollectivityTransactionRepository;
@@ -27,7 +26,7 @@ public class CollectivityTransactionController {
 
     @GetMapping
     public List<CollectivityTransaction> getTransactions(
-            @PathVariable int id,
+            @PathVariable String id,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         if (!collectivityRepository.existsById(id)) {

@@ -5,7 +5,7 @@ import prog3.exam.model.enums.*;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class BankAccount {
-    private int id;
+    private String id;
     private String holderName;
     private Bank bankName;
     private int bankCode;

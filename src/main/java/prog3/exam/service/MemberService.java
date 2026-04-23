@@ -23,33 +23,31 @@ public class MemberService {
         this.collectivityRepository = collectivityRepository;
     }
 
-//    @Bean
     public List<Member> createMembers(List<CreateMemberRequest> requests) {
         List<Member> created = new ArrayList<>();
 
         for (CreateMemberRequest req : requests) {
             validateCreateMember(req);
 
-            int memberId = memberRepository.save(req);
+            memberRepository.save(req);
 
             if (req.getReferees() != null) {
-                for (int refereeId : req.getReferees()) {
+                for (String refereeId : req.getReferees()) {
                     if (!memberRepository.existsById(refereeId)) {
                         throw new NotFoundException("Referee not found: " + refereeId);
                     }
-                    memberRepository.saveReferee(memberId, refereeId);
+                    memberRepository.saveReferee(req.getId(), refereeId);
                 }
             }
 
-            Member member = memberRepository.findById(memberId)
-                    .orElseThrow(() -> new IllegalStateException("Member not persisted: " + memberId));
+            Member member = memberRepository.findById(req.getId())
+                    .orElseThrow(() -> new IllegalStateException("Member not persisted: " + req.getId()));
             created.add(member);
         }
 
         return created;
     }
 
-//    @Bean
     private void validateCreateMember(CreateMemberRequest req) {
         if (!Boolean.TRUE.equals(req.getRegistrationFeePaid())) {
             throw new BadRequestException("Registration fee not paid.");

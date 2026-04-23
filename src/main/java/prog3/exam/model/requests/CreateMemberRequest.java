@@ -9,6 +9,7 @@ import java.util.List;
 
 @Data
 public class CreateMemberRequest {
+    private String id;
     private String firstName;
     private String lastName;
     private LocalDate birthDate;
@@ -19,8 +20,8 @@ public class CreateMemberRequest {
     private String email;
     private MemberOccupation occupation;
 
-    private Integer collectivityIdentifier;
-    private List<Integer> referees;
+    private String collectivityIdentifier;
+    private List<String> referees;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;
 }

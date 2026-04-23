@@ -36,17 +36,18 @@ public class CollectivityService {
 
             CreateCollectivityStructureRequest structureReq = req.getStructure();
 
-            Integer presidentId     = structureReq != null ? structureReq.getPresident()     : null;
-            Integer vicePresidentId = structureReq != null ? structureReq.getVicePresident() : null;
-            Integer treasurerId     = structureReq != null ? structureReq.getTreasurer()     : null;
-            Integer secretaryId     = structureReq != null ? structureReq.getSecretary()     : null;
+            String presidentId     = structureReq != null ? structureReq.getPresident()     : null;
+            String vicePresidentId = structureReq != null ? structureReq.getVicePresident() : null;
+            String treasurerId     = structureReq != null ? structureReq.getTreasurer()     : null;
+            String secretaryId     = structureReq != null ? structureReq.getSecretary()     : null;
 
             validateMemberExists(presidentId,     "President");
             validateMemberExists(vicePresidentId, "Vice-president");
             validateMemberExists(treasurerId,     "Treasurer");
             validateMemberExists(secretaryId,     "Secretary");
 
-            int collectivityId = collectivityRepository.save(
+            collectivityRepository.save(
+                    req.getId(),
                     req.getLocation(),
                     Boolean.TRUE.equals(req.getFederationApproval()),
                     presidentId, vicePresidentId, treasurerId, secretaryId
@@ -54,7 +55,7 @@ public class CollectivityService {
 
             List<Member> members = new ArrayList<>();
             if (req.getMembers() != null) {
-                for (int memberId : req.getMembers()) {
+                for (String memberId : req.getMembers()) {
                     Member member = memberRepository.findById(memberId)
                             .orElseThrow(() -> new NotFoundException("Member not found: " + memberId));
                     members.add(member);
@@ -69,7 +70,7 @@ public class CollectivityService {
                     .build();
 
             result.add(Collectivity.builder()
-                    .id(collectivityId)
+                    .id(req.getId())
                     .location(req.getLocation())
                     .structure(structure)
                     .members(members)
@@ -79,7 +80,7 @@ public class CollectivityService {
         return result;
     }
 
-    public Collectivity assignIdentity(int id, AssignCollectivityIdentityRequest request) {
+    public Collectivity assignIdentity(String id, AssignCollectivityIdentityRequest request) {
         if (request.getNumber() == null || request.getName() == null
                 || request.getName().isBlank()) {
             throw new BadRequestException("Both number and name are required.");
@@ -122,13 +123,13 @@ public class CollectivityService {
         }
     }
 
-    private void validateMemberExists(Integer memberId, String role) {
+    private void validateMemberExists(String memberId, String role) {
         if (memberId != null && !memberRepository.existsById(memberId)) {
             throw new NotFoundException(role + " member not found: " + memberId);
         }
     }
 
-    private Member resolveMember(Integer memberId) {
+    private Member resolveMember(String memberId) {
         if (memberId == null) return null;
         return memberRepository.findById(memberId).orElse(null);
     }

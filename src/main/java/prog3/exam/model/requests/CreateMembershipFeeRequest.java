@@ -6,6 +6,7 @@ import java.time.LocalDate;
 
 @Data
 public class CreateMembershipFeeRequest {
+    private String id;
     private LocalDate eligibleFrom;
     private Frequency frequency;
     private Double amount;
