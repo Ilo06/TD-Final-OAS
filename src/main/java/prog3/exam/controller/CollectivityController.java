@@ -37,7 +37,6 @@ public class CollectivityController {
         return collectivityService.createCollectivities(requests);
     }
 
-
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Collectivity getCollectivity(@PathVariable int id) {
@@ -45,14 +44,13 @@ public class CollectivityController {
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + id));
     }
 
-    @PutMapping("/{id}/identity")
+    @PutMapping("/{id}/informations")
     @ResponseStatus(HttpStatus.OK)
     public Collectivity assignIdentity(
             @PathVariable int id,
             @RequestBody AssignCollectivityIdentityRequest request) {
         return collectivityService.assignIdentity(id, request);
     }
-
 
     @GetMapping("/{id}/financialAccounts")
     @ResponseStatus(HttpStatus.OK)
