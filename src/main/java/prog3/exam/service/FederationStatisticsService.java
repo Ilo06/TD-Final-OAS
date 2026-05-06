@@ -21,13 +21,16 @@ public class FederationStatisticsService {
     public List<CollectivityOverallStatistics> getOverallStatistics(LocalDate from, LocalDate to) {
         List<CollectivityOverallStatistics> result = new ArrayList<>();
 
-        for (FederationStatisticsRepository.CollectivityRow row
-                : federationStatisticsRepository.findAllCollectivities()) {
+        for (FederationStatisticsRepository.CollectivityRow row : federationStatisticsRepository
+                .findAllCollectivities()) {
 
             int newMembers = federationStatisticsRepository.countNewMembers(row.id(), from, to);
 
             double percentage = federationStatisticsRepository
                     .computeCurrentDuePercentage(row.id(), from, to);
+
+            Double assiduityPercentage = federationStatisticsRepository
+                    .computeOverallAssiduityPercentage(row.id(), from, to);
 
             CollectivityInformation info = CollectivityInformation.builder()
                     .id(row.id())
@@ -39,6 +42,7 @@ public class FederationStatisticsService {
                     .collectivityInformation(info)
                     .newMembersNumber(newMembers)
                     .overallMemberCurrentDuePercentage(percentage)
+                    .overallMemberAssiduityPercentage(assiduityPercentage)
                     .build());
         }
 
