@@ -23,39 +23,60 @@ public class FinancialAccountRepository {
     }
 
     private static final String FIND_CASH_BY_COLLECTIVITY =
-            "SELECT id, amount FROM cash_account WHERE collectivity_id = ?";
+            "SELECT id FROM cash_account WHERE collectivity_id = ?";
 
-    private static final String CASH_PAYMENTS_AFTER = """
+    private static final String CASH_BALANCE_UP_TO = """
             SELECT COALESCE(SUM(mp.amount), 0)
             FROM member_payment mp
             WHERE mp.account_credited_type = 'CASH'
               AND mp.account_credited_id   = ?
-              AND mp.creation_date         > ?
+              AND mp.creation_date        <= ?
+            """;
+
+    private static final String CASH_BALANCE_ALL = """
+            SELECT COALESCE(SUM(mp.amount), 0)
+            FROM member_payment mp
+            WHERE mp.account_credited_type = 'CASH'
+              AND mp.account_credited_id   = ?
             """;
 
     private static final String FIND_MOBILE_BY_COLLECTIVITY =
-            "SELECT id, holder_name, mobile_banking_service, mobile_number, amount " +
-            "FROM mobile_banking_account WHERE collectivity_id = ?";
+            "SELECT id, holder_name, mobile_banking_service, mobile_number " +
+                    "FROM mobile_banking_account WHERE collectivity_id = ?";
 
-    private static final String MOBILE_PAYMENTS_AFTER = """
+    private static final String MOBILE_BALANCE_UP_TO = """
             SELECT COALESCE(SUM(mp.amount), 0)
             FROM member_payment mp
             WHERE mp.account_credited_type = 'MOBILE_BANKING'
               AND mp.account_credited_id   = ?
-              AND mp.creation_date         > ?
+              AND mp.creation_date        <= ?
+            """;
+
+    private static final String MOBILE_BALANCE_ALL = """
+            SELECT COALESCE(SUM(mp.amount), 0)
+            FROM member_payment mp
+            WHERE mp.account_credited_type = 'MOBILE_BANKING'
+              AND mp.account_credited_id   = ?
             """;
 
     private static final String FIND_BANK_BY_COLLECTIVITY =
             "SELECT id, holder_name, bank_name, bank_code, bank_branch_code, " +
-            "bank_account_number, bank_account_key, amount " +
-            "FROM bank_account WHERE collectivity_id = ?";
+                    "bank_account_number, bank_account_key " +
+                    "FROM bank_account WHERE collectivity_id = ?";
 
-    private static final String BANK_PAYMENTS_AFTER = """
+    private static final String BANK_BALANCE_UP_TO = """
             SELECT COALESCE(SUM(mp.amount), 0)
             FROM member_payment mp
             WHERE mp.account_credited_type = 'BANK'
               AND mp.account_credited_id   = ?
-              AND mp.creation_date         > ?
+              AND mp.creation_date        <= ?
+            """;
+
+    private static final String BANK_BALANCE_ALL = """
+            SELECT COALESCE(SUM(mp.amount), 0)
+            FROM member_payment mp
+            WHERE mp.account_credited_type = 'BANK'
+              AND mp.account_credited_id   = ?
             """;
 
     public List<Object> findByCollectivityId(String collectivityId, LocalDate at) {
@@ -74,10 +95,8 @@ public class FinancialAccountRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String id = rs.getString("id");
-                    double currentAmount = rs.getDouble("amount");
-                    double balance = at != null
-                            ? currentAmount - paymentsAfter(conn, CASH_PAYMENTS_AFTER, id, at)
-                            : currentAmount;
+                    double balance = computeBalance(conn,
+                            at != null ? CASH_BALANCE_UP_TO : CASH_BALANCE_ALL, id, at);
                     list.add(CashAccount.builder()
                             .id(id)
                             .amount(balance)
@@ -100,10 +119,8 @@ public class FinancialAccountRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String id = rs.getString("id");
-                    double currentAmount = rs.getDouble("amount");
-                    double balance = at != null
-                            ? currentAmount - paymentsAfter(conn, MOBILE_PAYMENTS_AFTER, id, at)
-                            : currentAmount;
+                    double balance = computeBalance(conn,
+                            at != null ? MOBILE_BALANCE_UP_TO : MOBILE_BALANCE_ALL, id, at);
                     String svc = rs.getString("mobile_banking_service");
                     list.add(MobileBankingAccount.builder()
                             .id(id)
@@ -130,10 +147,8 @@ public class FinancialAccountRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String id = rs.getString("id");
-                    double currentAmount = rs.getDouble("amount");
-                    double balance = at != null
-                            ? currentAmount - paymentsAfter(conn, BANK_PAYMENTS_AFTER, id, at)
-                            : currentAmount;
+                    double balance = computeBalance(conn,
+                            at != null ? BANK_BALANCE_UP_TO : BANK_BALANCE_ALL, id, at);
                     String bankStr = rs.getString("bank_name");
                     list.add(BankAccount.builder()
                             .id(id)
@@ -155,10 +170,17 @@ public class FinancialAccountRepository {
         return list;
     }
 
-    private double paymentsAfter(Connection conn, String sql, String accountId, LocalDate at) {
+    /**
+     * Computes balance from payment records.
+     * If {@code at} is non-null, sums payments up to and including that date.
+     * If {@code at} is null, the sql passed in should have no date parameter (sums all payments).
+     */
+    private double computeBalance(Connection conn, String sql, String accountId, LocalDate at) {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, accountId);
-            ps.setDate(2, Date.valueOf(at));
+            if (at != null) {
+                ps.setDate(2, Date.valueOf(at));
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getDouble(1) : 0.0;
             }

@@ -16,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/collectivities")
+@CrossOrigin(origins = "*")
 public class CollectivityController {
 
     private final CollectivityService collectivityService;
