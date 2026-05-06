@@ -33,16 +33,16 @@ public class MemberRepository {
 
     private static final String FIND_BY_ID = """
             SELECT id, first_name, last_name, birth_date, gender, address, profession,
-                   phone_number, email, occupation
+                   phone_number, email, occupation, adhesion_date
             FROM member WHERE id = ?
             """;
 
     private static final String FIND_REFEREES_OF = """
             SELECT m.id, m.first_name, m.last_name, m.birth_date, m.gender, m.address,
-                   m.profession, m.phone_number, m.email, m.occupation
+                   m.profession, m.phone_number, m.email, m.occupation, m.adhesion_date
             FROM member m
             JOIN member_referee mr ON m.id = mr.referee_id
-                WHERE mr.member_id = ?
+            WHERE mr.member_id = ?
             """;
 
     private static final String EXISTS_BY_ID =

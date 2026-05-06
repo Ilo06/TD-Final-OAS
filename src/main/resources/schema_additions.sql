@@ -70,3 +70,6 @@ CREATE TABLE IF NOT EXISTS collectivity_transaction (
     FOREIGN KEY (collectivity_id)  REFERENCES collectivity(id),
     FOREIGN KEY (member_debited_id) REFERENCES member(id)
 );
+
+UPDATE member SET gender = 'MALE'   WHERE gender = 'M';
+UPDATE member SET gender = 'FEMALE' WHERE gender = 'F';

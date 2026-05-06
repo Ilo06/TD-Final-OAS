@@ -1,5 +1,6 @@
 package prog3.exam.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,5 +27,7 @@ public class Member {
     private String email;
     private MemberOccupation occupation;
     private List<Member> referees;
+
+    @JsonIgnore
     private LocalDate adhesionDate;
 }
