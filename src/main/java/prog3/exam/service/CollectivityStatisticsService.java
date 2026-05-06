@@ -16,50 +16,55 @@ import java.util.List;
 @Service
 public class CollectivityStatisticsService {
 
-    private final CollectivityRepository collectivityRepository;
-    private final CollectivityStatisticsRepository statisticsRepository;
-    private final MemberRepository memberRepository;
+        private final CollectivityRepository collectivityRepository;
+        private final CollectivityStatisticsRepository statisticsRepository;
+        private final MemberRepository memberRepository;
 
-    public CollectivityStatisticsService(CollectivityRepository collectivityRepository,
-                                          CollectivityStatisticsRepository statisticsRepository,
-                                          MemberRepository memberRepository) {
-        this.collectivityRepository = collectivityRepository;
-        this.statisticsRepository = statisticsRepository;
-        this.memberRepository = memberRepository;
-    }
-
-    public List<CollectivityLocalStatistics> getStatistics(String collectivityId,
-                                                            LocalDate from, LocalDate to) {
-        if (!collectivityRepository.existsById(collectivityId)) {
-            throw new NotFoundException("Collectivity not found: " + collectivityId);
+        public CollectivityStatisticsService(CollectivityRepository collectivityRepository,
+                        CollectivityStatisticsRepository statisticsRepository,
+                        MemberRepository memberRepository) {
+                this.collectivityRepository = collectivityRepository;
+                this.statisticsRepository = statisticsRepository;
+                this.memberRepository = memberRepository;
         }
 
-        List<String> memberIds = statisticsRepository.findMemberIds(collectivityId);
-        List<CollectivityLocalStatistics> result = new ArrayList<>();
+        public List<CollectivityLocalStatistics> getStatistics(String collectivityId,
+                        LocalDate from, LocalDate to) {
+                if (!collectivityRepository.existsById(collectivityId)) {
+                        throw new NotFoundException("Collectivity not found: " + collectivityId);
+                }
 
-        for (String memberId : memberIds) {
-            Member member = memberRepository.findById(memberId).orElse(null);
-            if (member == null) continue;
+                List<String> memberIds = statisticsRepository.findMemberIds(collectivityId);
+                List<CollectivityLocalStatistics> result = new ArrayList<>();
 
-            MemberDescription description = MemberDescription.builder()
-                    .id(member.getId())
-                    .firstName(member.getFirstName())
-                    .lastName(member.getLastName())
-                    .email(member.getEmail())
-                    .occupation(member.getOccupation())
-                    .build();
+                for (String memberId : memberIds) {
+                        Member member = memberRepository.findById(memberId).orElse(null);
+                        if (member == null)
+                                continue;
 
-            double earnedAmount = statisticsRepository.getTotalPaid(memberId, from, to);
-            double unpaidAmount = statisticsRepository.getPotentialUnpaid(
-                    memberId, collectivityId, from, to);
+                        MemberDescription description = MemberDescription.builder()
+                                        .id(member.getId())
+                                        .firstName(member.getFirstName())
+                                        .lastName(member.getLastName())
+                                        .email(member.getEmail())
+                                        .occupation(member.getOccupation())
+                                        .build();
 
-            result.add(CollectivityLocalStatistics.builder()
-                    .memberDescription(description)
-                    .earnedAmount(earnedAmount)
-                    .unpaidAmount(unpaidAmount)
-                    .build());
+                        double earnedAmount = statisticsRepository.getTotalPaid(memberId, from, to);
+                        double unpaidAmount = statisticsRepository.getPotentialUnpaid(
+                                        memberId, collectivityId, from, to);
+
+                        Double assiduityPercentage = statisticsRepository.getAssiduityPercentage(
+                                        memberId, collectivityId, from, to);
+
+                        result.add(CollectivityLocalStatistics.builder()
+                                        .memberDescription(description)
+                                        .earnedAmount(earnedAmount)
+                                        .unpaidAmount(unpaidAmount)
+                                        .assiduityPercentage(assiduityPercentage)
+                                        .build());
+                }
+
+                return result;
         }
-
-        return result;
-    }
 }
