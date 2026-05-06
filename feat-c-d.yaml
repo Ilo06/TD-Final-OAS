@@ -9,7 +9,7 @@ info:
     - v0.0.3 (2026-04-23) : New features about membership fees, collectivities transactions and its financial accounts, and members payments.
   version: 0.0.1
 servers:
-  - url: 'https://localhost:8080'
+  - url: 'http://localhost:8080'
 paths:
   '/collectivities':
     post:

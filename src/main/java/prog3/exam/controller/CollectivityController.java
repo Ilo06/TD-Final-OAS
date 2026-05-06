@@ -44,7 +44,7 @@ public class CollectivityController {
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + id));
     }
 
-    @PutMapping("/{id}/identity")
+    @PutMapping("/{id}/informations")
     @ResponseStatus(HttpStatus.OK)
     public Collectivity assignIdentity(
             @PathVariable String id,
