@@ -26,4 +26,5 @@ public class Member {
     private String email;
     private MemberOccupation occupation;
     private List<Member> referees;
+    private LocalDate adhesionDate;
 }
