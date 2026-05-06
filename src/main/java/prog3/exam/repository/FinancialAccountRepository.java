@@ -170,11 +170,6 @@ public class FinancialAccountRepository {
         return list;
     }
 
-    /**
-     * Computes balance from payment records.
-     * If {@code at} is non-null, sums payments up to and including that date.
-     * If {@code at} is null, the sql passed in should have no date parameter (sums all payments).
-     */
     private double computeBalance(Connection conn, String sql, String accountId, LocalDate at) {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, accountId);

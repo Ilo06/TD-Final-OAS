@@ -13,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/collectivities/{id}/transactions")
+@CrossOrigin(origins = "*")
 public class CollectivityTransactionController {
 
     private final CollectivityTransactionRepository transactionRepository;

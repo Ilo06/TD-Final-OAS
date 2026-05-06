@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/collectivities/{id}/activities/{activityId}/attendance")
+@CrossOrigin(origins = "*")
 public class ActivityAttendanceController {
 
     private final ActivityAttendanceService attendanceService;
