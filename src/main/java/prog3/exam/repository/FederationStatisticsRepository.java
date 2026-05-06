@@ -48,20 +48,20 @@ public class FederationStatisticsRepository {
               AND creation_date BETWEEN ? AND ?
             """;
 
-    public record CollectivityRow(String id, Integer number, String name) {}
+    public record CollectivityRow(String id, Integer number, String name) {
+    }
 
     public List<CollectivityRow> findAllCollectivities() {
         List<CollectivityRow> rows = new ArrayList<>();
         Connection conn = dataSourceConfig.getConnection();
         try (PreparedStatement ps = conn.prepareStatement(FIND_ALL_COLLECTIVITIES);
-             ResultSet rs = ps.executeQuery()) {
+                ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Object numObj = rs.getObject("number");
                 rows.add(new CollectivityRow(
                         rs.getString("id"),
                         numObj != null ? (Integer) numObj : null,
-                        rs.getString("name")
-                ));
+                        rs.getString("name")));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -89,10 +89,12 @@ public class FederationStatisticsRepository {
 
     public double computeCurrentDuePercentage(String collectivityId, LocalDate from, LocalDate to) {
         List<String> memberIds = findMemberIds(collectivityId);
-        if (memberIds.isEmpty()) return 0.0;
+        if (memberIds.isEmpty())
+            return 0.0;
 
         List<FeeRow> activeFees = findActiveFees(collectivityId, to);
-        if (activeFees.isEmpty()) return 100.0;
+        if (activeFees.isEmpty())
+            return 100.0;
 
         Connection conn = dataSourceConfig.getConnection();
         try {
@@ -109,18 +111,22 @@ public class FederationStatisticsRepository {
     }
 
     private boolean isMemberUpToDate(Connection conn, String memberId,
-                                      List<FeeRow> activeFees,
-                                      LocalDate from, LocalDate to) {
+            List<FeeRow> activeFees,
+            LocalDate from, LocalDate to) {
         for (FeeRow fee : activeFees) {
             LocalDate effectiveStart = fee.eligibleFrom() != null && fee.eligibleFrom().isAfter(from)
-                    ? fee.eligibleFrom() : from;
-            if (effectiveStart.isAfter(to)) continue; // cotisation pas encore applicable
+                    ? fee.eligibleFrom()
+                    : from;
+            if (effectiveStart.isAfter(to))
+                continue; // cotisation pas encore applicable
 
             double expected = countOccurrences(fee.frequency(), effectiveStart, to) * fee.amount();
-            if (expected <= 0) continue;
+            if (expected <= 0)
+                continue;
 
             double paid = getPaidForFee(conn, memberId, fee.id(), from, to);
-            if (paid < expected) return false;
+            if (paid < expected)
+                return false;
         }
         return true;
     }
@@ -131,7 +137,8 @@ public class FederationStatisticsRepository {
         try (PreparedStatement ps = conn.prepareStatement(FIND_MEMBER_IDS)) {
             ps.setString(1, collectivityId);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) ids.add(rs.getString("id"));
+                while (rs.next())
+                    ids.add(rs.getString("id"));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -141,7 +148,8 @@ public class FederationStatisticsRepository {
         return ids;
     }
 
-    private record FeeRow(String id, LocalDate eligibleFrom, String frequency, double amount) {}
+    private record FeeRow(String id, LocalDate eligibleFrom, String frequency, double amount) {
+    }
 
     private List<FeeRow> findActiveFees(String collectivityId, LocalDate to) {
         List<FeeRow> fees = new ArrayList<>();
@@ -156,8 +164,7 @@ public class FederationStatisticsRepository {
                             rs.getString("id"),
                             d != null ? d.toLocalDate() : null,
                             rs.getString("frequency"),
-                            rs.getDouble("amount")
-                    ));
+                            rs.getDouble("amount")));
                 }
             }
         } catch (SQLException e) {
@@ -169,7 +176,7 @@ public class FederationStatisticsRepository {
     }
 
     private double getPaidForFee(Connection conn, String memberId, String feeId,
-                                  LocalDate from, LocalDate to) {
+            LocalDate from, LocalDate to) {
         try (PreparedStatement ps = conn.prepareStatement(PAID_FOR_FEE)) {
             ps.setString(1, memberId);
             ps.setString(2, feeId);
@@ -184,7 +191,8 @@ public class FederationStatisticsRepository {
     }
 
     private int countOccurrences(String frequency, LocalDate start, LocalDate to) {
-        if (frequency == null) return 0;
+        if (frequency == null)
+            return 0;
         return switch (frequency) {
             case "PUNCTUALLY" -> 1;
             case "WEEKLY" -> {
@@ -195,17 +203,108 @@ public class FederationStatisticsRepository {
                 int months = 0;
                 LocalDate cursor = start.withDayOfMonth(1);
                 LocalDate endMonth = to.withDayOfMonth(1);
-                while (!cursor.isAfter(endMonth)) { months++; cursor = cursor.plusMonths(1); }
+                while (!cursor.isAfter(endMonth)) {
+                    months++;
+                    cursor = cursor.plusMonths(1);
+                }
                 yield months;
             }
             case "ANNUALLY" -> {
                 int years = 0;
                 LocalDate cursor = start.withDayOfYear(1);
                 LocalDate endYear = to.withDayOfYear(1);
-                while (!cursor.isAfter(endYear)) { years++; cursor = cursor.plusYears(1); }
+                while (!cursor.isAfter(endYear)) {
+                    years++;
+                    cursor = cursor.plusYears(1);
+                }
                 yield years;
             }
             default -> 0;
         };
+    }
+
+    private static final String COUNT_ACTIVITIES_FOR_COLLECTIVITY = """
+            SELECT COUNT(DISTINCT ca.id)
+            FROM collectivity_activity ca
+            LEFT JOIN activity_occupation_concerned aoc ON ca.id = aoc.activity_id
+            JOIN member m ON m.collectivity_id = ca.collectivity_id
+            WHERE ca.collectivity_id = ?
+              AND m.id = ?
+              AND (
+                  ca.executive_date BETWEEN ? AND ?
+                  OR (ca.executive_date IS NULL AND ca.recurrence_week_ordinal IS NOT NULL)
+              )
+              AND (
+                  aoc.occupation IS NULL
+                  OR aoc.occupation = m.occupation
+              )
+            """;
+
+    private static final String COUNT_ATTENDED_FOR_COLLECTIVITY = """
+            SELECT COUNT(DISTINCT ama.activity_id)
+            FROM activity_member_attendance ama
+            JOIN collectivity_activity ca ON ama.activity_id = ca.id
+            WHERE ama.member_id = ?
+              AND ca.collectivity_id = ?
+              AND ama.attendance_status = 'ATTENDED'
+              AND (
+                  ca.executive_date BETWEEN ? AND ?
+                  OR (ca.executive_date IS NULL AND ca.recurrence_week_ordinal IS NOT NULL)
+              )
+            """;
+
+    public Double computeOverallAssiduityPercentage(String collectivityId,
+            LocalDate from, LocalDate to) {
+        List<String> memberIds = findMemberIds(collectivityId);
+        if (memberIds.isEmpty())
+            return null;
+
+        int totalConcerned = 0;
+        int totalAttended = 0;
+
+        for (String memberId : memberIds) {
+            totalConcerned += countActivitiesConcerned(collectivityId, memberId, from, to);
+            totalAttended += countActivitiesAttended(memberId, collectivityId, from, to);
+        }
+
+        if (totalConcerned == 0)
+            return null;
+        return (totalAttended * 100.0) / totalConcerned;
+    }
+
+    private int countActivitiesConcerned(String collectivityId, String memberId,
+            LocalDate from, LocalDate to) {
+        Connection conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(COUNT_ACTIVITIES_FOR_COLLECTIVITY)) {
+            ps.setString(1, collectivityId);
+            ps.setString(2, memberId);
+            ps.setDate(3, Date.valueOf(from));
+            ps.setDate(4, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
+        }
+    }
+
+    private int countActivitiesAttended(String memberId, String collectivityId,
+            LocalDate from, LocalDate to) {
+        Connection conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(COUNT_ATTENDED_FOR_COLLECTIVITY)) {
+            ps.setString(1, memberId);
+            ps.setString(2, collectivityId);
+            ps.setDate(3, Date.valueOf(from));
+            ps.setDate(4, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
+        }
     }
 }

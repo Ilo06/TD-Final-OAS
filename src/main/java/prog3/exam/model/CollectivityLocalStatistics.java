@@ -10,4 +10,5 @@ public class CollectivityLocalStatistics {
     private MemberDescription memberDescription;
     private double earnedAmount;
     private double unpaidAmount;
+    private Double assiduityPercentage;
 }
