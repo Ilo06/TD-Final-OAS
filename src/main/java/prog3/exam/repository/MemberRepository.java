@@ -24,8 +24,8 @@ public class MemberRepository {
     private static final String INSERT_MEMBER = """
             INSERT INTO member (id, first_name, last_name, birth_date, gender, address, profession,
                                 phone_number, email, occupation, collectivity_id,
-                                registration_fee_paid, membership_dues_paid)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                registration_fee_paid, membership_dues_paid,adhesion_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE)
             """;
 
     private static final String INSERT_REFEREE =
@@ -178,6 +178,7 @@ public class MemberRepository {
         String genderStr = rs.getString("gender");
         String occupationStr = rs.getString("occupation");
         Date birthDate = rs.getDate("birth_date");
+        Date adhesionDate = rs.getDate("adhesion_date");
         return Member.builder()
                 .id(rs.getString("id"))
                 .firstName(rs.getString("first_name"))
@@ -190,6 +191,7 @@ public class MemberRepository {
                 .email(rs.getString("email"))
                 .occupation(occupationStr != null ? MemberOccupation.valueOf(occupationStr) : null)
                 .referees(new ArrayList<>())
+                .adhesionDate(adhesionDate != null ? adhesionDate.toLocalDate() : null)
                 .build();
     }
 }
