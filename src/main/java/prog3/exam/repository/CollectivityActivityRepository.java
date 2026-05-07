@@ -28,12 +28,12 @@ public class CollectivityActivityRepository {
             INSERT INTO collectivity_activity
                 (id, label, activity_type, recurrence_week_ordinal, recurrence_day_of_week,
                  executive_date, collectivity_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?::activity_type_enum, ?, ?::day_of_week_enum, ?, ?)
             """;
 
     private static final String INSERT_OCCUPATION = """
             INSERT INTO collectivity_activity_occupation (activity_id, occupation)
-            VALUES (?, ?)
+            VALUES (?, ?::occupation_enum)
             """;
 
     private static final String FIND_BY_COLLECTIVITY = """

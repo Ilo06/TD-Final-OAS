@@ -23,10 +23,10 @@ public class ActivityAttendanceRepository {
             "SELECT id, attendance_status FROM activity_member_attendance WHERE activity_id = ? AND member_id = ?";
 
     private static final String INSERT =
-            "INSERT INTO activity_member_attendance (id, activity_id, member_id, attendance_status) VALUES (?, ?, ?, ?)";
+            "INSERT INTO activity_member_attendance (id, activity_id, member_id, attendance_status) VALUES (?, ?, ?, ?::attendance_status_enum)";
 
     private static final String UPDATE =
-            "UPDATE activity_member_attendance SET attendance_status = ? WHERE activity_id = ? AND member_id = ?";
+            "UPDATE activity_member_attendance SET attendance_status = ?::attendance_status_enum WHERE activity_id = ? AND member_id = ?";
 
     private static final String FIND_ALL_BY_ACTIVITY =
             "SELECT id, member_id, attendance_status FROM activity_member_attendance WHERE activity_id = ?";

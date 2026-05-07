@@ -22,7 +22,7 @@ public class MembershipFeeRepository {
 
     private static final String INSERT = """
             INSERT INTO membership_fee (id, eligible_from, frequency, amount, label, status, collectivity_id)
-            VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?)
+            VALUES (?, ?, ?::frequency_enum, ?, ?, 'ACTIVE'::activity_status_enum, ?)
             """;
 
     private static final String FIND_BY_COLLECTIVITY =
