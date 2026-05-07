@@ -55,7 +55,8 @@ public class CollectivityStatisticsService {
                                         memberId, collectivityId, from, to);
 
                         Double assiduityPercentage = statisticsRepository.getAssiduityPercentage(
-                                        memberId, collectivityId, from, to);
+                                memberId, collectivityId, from, to);
+                        if (assiduityPercentage == null) assiduityPercentage = 0.0;
 
                         result.add(CollectivityLocalStatistics.builder()
                                         .memberDescription(description)

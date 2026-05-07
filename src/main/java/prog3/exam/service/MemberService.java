@@ -29,6 +29,15 @@ public class MemberService {
         for (CreateMemberRequest req : requests) {
             validateCreateMember(req);
 
+            // Auto-generate ID in format C1-M5
+            if (req.getId() == null || req.getId().isBlank()) {
+                if (req.getCollectivityIdentifier() == null) {
+                    throw new BadRequestException("collectivityIdentifier is required to auto-generate member ID.");
+                }
+                String generatedId = memberRepository.generateMemberId(req.getCollectivityIdentifier());
+                req.setId(generatedId);
+            }
+
             memberRepository.save(req);
 
             if (req.getReferees() != null) {

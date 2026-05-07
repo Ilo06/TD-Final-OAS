@@ -208,12 +208,30 @@ public class CollectivityRepository {
         }
     }
 
-    public void updateIdentity(String id, int number, String name) {
+    public void updateIdentity(String id, Integer number, String name) {
+        StringBuilder sql = new StringBuilder("UPDATE collectivity SET ");
+        List<Object> params = new ArrayList<>();
+
+        if (number != null) {
+            sql.append("number = ?, ");
+            params.add(number);
+        }
+        if (name != null) {
+            sql.append("name = ?, "); // No immutability check — direct override
+            params.add(name);
+        }
+
+        if (params.isEmpty()) return;
+
+        sql.setLength(sql.length() - 2);
+        sql.append(" WHERE id = ?");
+        params.add(id);
+
         Connection conn = dataSourceConfig.getConnection();
-        try (PreparedStatement ps = conn.prepareStatement(UPDATE_IDENTITY)) {
-            ps.setInt(1, number);
-            ps.setString(2, name);
-            ps.setString(3, id);
+        try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);

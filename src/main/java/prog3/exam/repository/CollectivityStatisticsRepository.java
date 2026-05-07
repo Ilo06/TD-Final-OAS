@@ -43,6 +43,40 @@ public class CollectivityStatisticsRepository {
               AND creation_date BETWEEN ? AND ?
             """;
 
+    // ── Assiduity queries (Bonus 2) ──────────────────────────────────────────
+    // Uses the correct join table: collectivity_activity_occupation
+    private static final String COUNT_ACTIVITIES_CONCERNED = """
+            SELECT COUNT(DISTINCT ca.id)
+            FROM collectivity_activity ca
+            LEFT JOIN collectivity_activity_occupation cao ON ca.id = cao.activity_id
+            JOIN member m ON m.collectivity_id = ca.collectivity_id
+            WHERE m.id = ?
+              AND ca.collectivity_id = ?
+              AND (
+                  ca.executive_date BETWEEN ? AND ?
+                  OR (ca.executive_date IS NULL AND ca.recurrence_week_ordinal IS NOT NULL)
+              )
+              AND (
+                  NOT EXISTS (SELECT 1 FROM collectivity_activity_occupation x WHERE x.activity_id = ca.id)
+                  OR cao.occupation = m.occupation
+              )
+            """;
+
+    private static final String COUNT_ACTIVITIES_ATTENDED = """
+            SELECT COUNT(DISTINCT ama.activity_id)
+            FROM activity_member_attendance ama
+            JOIN collectivity_activity ca ON ama.activity_id = ca.id
+            WHERE ama.member_id = ?
+              AND ca.collectivity_id = ?
+              AND ama.attendance_status = 'ATTENDED'
+              AND (
+                  ca.executive_date BETWEEN ? AND ?
+                  OR (ca.executive_date IS NULL AND ca.recurrence_week_ordinal IS NOT NULL)
+              )
+            """;
+
+    // ── Public API ───────────────────────────────────────────────────────────
+
     public List<String> findMemberIds(String collectivityId) {
         List<String> ids = new ArrayList<>();
         Connection conn = dataSourceConfig.getConnection();
@@ -76,7 +110,7 @@ public class CollectivityStatisticsRepository {
     }
 
     public double getPotentialUnpaid(String memberId, String collectivityId,
-                                      LocalDate from, LocalDate to) {
+                                     LocalDate from, LocalDate to) {
         double totalExpected = 0.0;
         double totalPaidForFees = 0.0;
 
@@ -113,7 +147,7 @@ public class CollectivityStatisticsRepository {
     }
 
     private double getPaidForFee(Connection conn, String memberId, String feeId,
-                                  LocalDate from, LocalDate to) {
+                                 LocalDate from, LocalDate to) {
         try (PreparedStatement ps = conn.prepareStatement(PAID_FOR_FEE_BY_MEMBER)) {
             ps.setString(1, memberId);
             ps.setString(2, feeId);
@@ -159,80 +193,48 @@ public class CollectivityStatisticsRepository {
         };
     }
 
-    private static final String COUNT_ACTIVITIES_CONCERNED = """
-        SELECT COUNT(DISTINCT ca.id)
-        FROM collectivity_activity ca
-        LEFT JOIN activity_occupation_concerned aoc ON ca.id = aoc.activity_id
-        JOIN member m ON m.collectivity_id = ca.collectivity_id
-        WHERE m.id = ?
-          AND ca.collectivity_id = ?
-          AND (
-              -- activité récurrente : on compte toutes les occurrences dans la période
-              -- simplification : si récurrente elle compte pour 1 (ou tu peux raffiner)
-              ca.executive_date BETWEEN ? AND ?
-              OR (ca.executive_date IS NULL AND ca.recurrence_week_ordinal IS NOT NULL)
-          )
-          AND (
-              aoc.occupation IS NULL            -- pas de filtre d'occupation => tous concernés
-              OR aoc.occupation = m.occupation  -- le membre a le bon poste
-          )
-        """;
+    public Double getAssiduityPercentage(String memberId, String collectivityId,
+                                         LocalDate from, LocalDate to) {
+        int total = countActivitiesConcerned(memberId, collectivityId, from, to);
+        if (total == 0) return null;
 
-private static final String COUNT_ACTIVITIES_ATTENDED = """
-        SELECT COUNT(DISTINCT ama.activity_id)
-        FROM activity_member_attendance ama
-        JOIN collectivity_activity ca ON ama.activity_id = ca.id
-        WHERE ama.member_id = ?
-          AND ca.collectivity_id = ?
-          AND ama.attendance_status = 'ATTENDED'
-          AND (
-              ca.executive_date BETWEEN ? AND ?
-              OR (ca.executive_date IS NULL AND ca.recurrence_week_ordinal IS NOT NULL)
-          )
-        """;
-
-public Double getAssiduityPercentage(String memberId, String collectivityId,
-                                      LocalDate from, LocalDate to) {
-    int total = countActivitiesConcerned(memberId, collectivityId, from, to);
-    if (total == 0) return null;
-
-    int attended = countActivitiesAttended(memberId, collectivityId, from, to);
-    return (attended * 100.0) / total;
-}
-
-private int countActivitiesConcerned(String memberId, String collectivityId,
-                                      LocalDate from, LocalDate to) {
-    Connection conn = dataSourceConfig.getConnection();
-    try (PreparedStatement ps = conn.prepareStatement(COUNT_ACTIVITIES_CONCERNED)) {
-        ps.setString(1, memberId);
-        ps.setString(2, collectivityId);
-        ps.setDate(3, Date.valueOf(from));
-        ps.setDate(4, Date.valueOf(to));
-        try (ResultSet rs = ps.executeQuery()) {
-            return rs.next() ? rs.getInt(1) : 0;
-        }
-    } catch (SQLException e) {
-        throw new RuntimeException(e);
-    } finally {
-        dataSourceConfig.closeConnection(conn);
+        int attended = countActivitiesAttended(memberId, collectivityId, from, to);
+        return (attended * 100.0) / total;
     }
-}
 
-private int countActivitiesAttended(String memberId, String collectivityId,
-                                     LocalDate from, LocalDate to) {
-    Connection conn = dataSourceConfig.getConnection();
-    try (PreparedStatement ps = conn.prepareStatement(COUNT_ACTIVITIES_ATTENDED)) {
-        ps.setString(1, memberId);
-        ps.setString(2, collectivityId);
-        ps.setDate(3, Date.valueOf(from));
-        ps.setDate(4, Date.valueOf(to));
-        try (ResultSet rs = ps.executeQuery()) {
-            return rs.next() ? rs.getInt(1) : 0;
+    private int countActivitiesConcerned(String memberId, String collectivityId,
+                                         LocalDate from, LocalDate to) {
+        Connection conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(COUNT_ACTIVITIES_CONCERNED)) {
+            ps.setString(1, memberId);
+            ps.setString(2, collectivityId);
+            ps.setDate(3, Date.valueOf(from));
+            ps.setDate(4, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
         }
-    } catch (SQLException e) {
-        throw new RuntimeException(e);
-    } finally {
-        dataSourceConfig.closeConnection(conn);
     }
-}
+
+    private int countActivitiesAttended(String memberId, String collectivityId,
+                                        LocalDate from, LocalDate to) {
+        Connection conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(COUNT_ACTIVITIES_ATTENDED)) {
+            ps.setString(1, memberId);
+            ps.setString(2, collectivityId);
+            ps.setDate(3, Date.valueOf(from));
+            ps.setDate(4, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
+        }
+    }
 }

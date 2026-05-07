@@ -24,7 +24,7 @@ public class CollectivityStatisticsController {
     }
 
     // TODO: typo here on collectivites
-    @GetMapping("/collectivites/{id}/statistics")
+    @GetMapping("/collectivities/{id}/statistics")
     public List<CollectivityLocalStatistics> getStatistics(
             @PathVariable String id,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

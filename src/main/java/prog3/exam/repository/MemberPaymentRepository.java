@@ -27,7 +27,7 @@ public class MemberPaymentRepository {
                 (id, amount, payment_mode, membership_fee_id,
                  account_credited_type, account_credited_id,
                  creation_date, member_id)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE, ?)
+            VALUES (?, ?, ?::payment_mode_enum, ?, ?, ?, CURRENT_DATE, ?)
             """;
 
     public MemberPayment save(String memberId, CreateMemberPaymentRequest req) {

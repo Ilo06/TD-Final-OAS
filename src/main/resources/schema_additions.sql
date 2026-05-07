@@ -73,3 +73,6 @@ CREATE TABLE IF NOT EXISTS collectivity_transaction (
 
 UPDATE member SET gender = 'MALE'   WHERE gender = 'M';
 UPDATE member SET gender = 'FEMALE' WHERE gender = 'F';
+
+
+ALTER TABLE member ADD COLUMN IF NOT EXISTS adhesion_date DATE DEFAULT CURRENT_DATE;

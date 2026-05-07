@@ -81,36 +81,43 @@ public class CollectivityService {
     }
 
     public Collectivity assignIdentity(String id, AssignCollectivityIdentityRequest request) {
-        if (request.getNumber() == null || request.getName() == null
-                || request.getName().isBlank()) {
-            throw new BadRequestException("Both number and name are required.");
-        }
-
         Collectivity collectivity = collectivityRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + id));
 
-        if (collectivityRepository.hasNumber(id)) {
-            throw new ConflictException(
-                    "Collectivity " + id + " already has a number assigned; it cannot be changed.");
-        }
-        if (collectivityRepository.hasName(id)) {
-            throw new ConflictException(
-                    "Collectivity " + id + " already has a name assigned; it cannot be changed.");
-        }
-
-        if (collectivityRepository.numberExistsElsewhere(request.getNumber(), id)) {
-            throw new ConflictException(
-                    "Number " + request.getNumber() + " is already used by another collectivity.");
-        }
-        if (collectivityRepository.nameExistsElsewhere(request.getName(), id)) {
-            throw new ConflictException(
-                    "Name '" + request.getName() + "' is already used by another collectivity.");
+        // Only update number if provided and not already set
+        if (request.getNumber() != null) {
+            if (collectivityRepository.hasNumber(id)) {
+                throw new ConflictException(
+                        "Collectivity " + id + " already has a number assigned; it cannot be changed.");
+            }
+            if (collectivityRepository.numberExistsElsewhere(request.getNumber(), id)) {
+                throw new ConflictException(
+                        "Number " + request.getNumber() + " is already used by another collectivity.");
+            }
         }
 
-        collectivityRepository.updateIdentity(id, request.getNumber(), request.getName());
+        // Only update name if provided and not already set
+        if (request.getName() != null && !request.getName().isBlank()) {
+            if (collectivityRepository.hasName(id)) {
+                throw new ConflictException(
+                        "Collectivity " + id + " already has a name assigned; it cannot be changed.");
+            }
+            if (collectivityRepository.nameExistsElsewhere(request.getName(), id)) {
+                throw new ConflictException(
+                        "Name '" + request.getName() + "' is already used by another collectivity.");
+            }
+        }
 
-        collectivity.setNumber(request.getNumber());
-        collectivity.setName(request.getName());
+        Integer numberToSet = request.getNumber();
+        String nameToSet = (request.getName() != null && !request.getName().isBlank())
+                ? request.getName() : null;
+
+        if (numberToSet != null || nameToSet != null) {
+            collectivityRepository.updateIdentity(id, numberToSet, nameToSet);
+            if (numberToSet != null) collectivity.setNumber(numberToSet);
+            if (nameToSet != null) collectivity.setName(nameToSet);
+        }
+
         return collectivity;
     }
 

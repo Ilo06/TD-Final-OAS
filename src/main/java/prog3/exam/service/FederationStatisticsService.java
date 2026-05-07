@@ -31,6 +31,7 @@ public class FederationStatisticsService {
 
             Double assiduityPercentage = federationStatisticsRepository
                     .computeOverallAssiduityPercentage(row.id(), from, to);
+            if (assiduityPercentage == null) assiduityPercentage = 0.0;
 
             CollectivityInformation info = CollectivityInformation.builder()
                     .id(row.id())

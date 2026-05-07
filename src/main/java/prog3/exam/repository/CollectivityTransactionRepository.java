@@ -27,7 +27,7 @@ public class CollectivityTransactionRepository {
             INSERT INTO collectivity_transaction
                 (id, amount, payment_mode, account_credited_type, account_credited_id,
                  member_debited_id, collectivity_id, creation_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_DATE)
+            VALUES (?, ?, ?::payment_mode_enum, ?, ?, ?, ?, CURRENT_DATE)
             """;
 
     private static final String FIND_BY_PERIOD = """

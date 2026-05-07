@@ -2,6 +2,7 @@ package prog3.exam.repository;
 
 import org.springframework.stereotype.Repository;
 import prog3.exam.datasource.DataSourceConfig;
+import prog3.exam.exception.BadRequestException;
 import prog3.exam.model.Member;
 import prog3.exam.model.enums.Gender;
 import prog3.exam.model.enums.MemberOccupation;
@@ -25,7 +26,7 @@ public class MemberRepository {
             INSERT INTO member (id, first_name, last_name, birth_date, gender, address, profession,
                                 phone_number, email, occupation, collectivity_id,
                                 registration_fee_paid, membership_dues_paid,adhesion_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::occupation_enum, ?, ?, ?, CURRENT_DATE)
             """;
 
     private static final String INSERT_REFEREE =
@@ -166,6 +167,46 @@ public class MemberRepository {
                     return rs.getString("collectivity_id");
                 }
                 return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
+        }
+    }
+
+    private static final String COUNT_MEMBERS_IN_COLLECTIVITY =
+            "SELECT COUNT(*) FROM member WHERE collectivity_id = ?";
+
+    private static final String FIND_COLLECTIVITY_NUMBER =
+            "SELECT number FROM collectivity WHERE id = ?";
+
+    public String generateMemberId(String collectivityId) {
+        // Get collectivity number
+        Integer collectivityNumber = null;
+        Connection conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(FIND_COLLECTIVITY_NUMBER)) {
+            ps.setString(1, collectivityId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) collectivityNumber = rs.getObject(1) != null ? rs.getInt(1) : null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dataSourceConfig.closeConnection(conn);
+        }
+
+        if (collectivityNumber == null) {
+            throw new BadRequestException("Collectivity has no number assigned yet; cannot generate member ID.");
+        }
+
+        // Get next member sequence for this collectivity
+        conn = dataSourceConfig.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(COUNT_MEMBERS_IN_COLLECTIVITY)) {
+            ps.setString(1, collectivityId);
+            try (ResultSet rs = ps.executeQuery()) {
+                int count = rs.next() ? rs.getInt(1) : 0;
+                return "C" + collectivityNumber + "-M" + (count + 1);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
